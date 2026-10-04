@@ -188,6 +188,21 @@ export type Database = {
         }
         Relationships: []
       }
+      internal_config: {
+        Row: {
+          key: string
+          value: string
+        }
+        Insert: {
+          key: string
+          value: string
+        }
+        Update: {
+          key?: string
+          value?: string
+        }
+        Relationships: []
+      }
       invoice_counters: {
         Row: {
           fy: string
@@ -477,6 +492,7 @@ export type Database = {
           id: string
           input: Json | null
           model_used: string | null
+          next_attempt_at: string | null
           output: Json | null
           run_id: string
           started_at: string | null
@@ -495,6 +511,7 @@ export type Database = {
           id?: string
           input?: Json | null
           model_used?: string | null
+          next_attempt_at?: string | null
           output?: Json | null
           run_id: string
           started_at?: string | null
@@ -513,6 +530,7 @@ export type Database = {
           id?: string
           input?: Json | null
           model_used?: string | null
+          next_attempt_at?: string | null
           output?: Json | null
           run_id?: string
           started_at?: string | null
@@ -698,6 +716,7 @@ export type Database = {
           order_id: string
           prompt: string | null
           provider: string | null
+          run_id: string | null
           status: string
           storage_path: string | null
           updated_at: string
@@ -711,6 +730,7 @@ export type Database = {
           order_id: string
           prompt?: string | null
           provider?: string | null
+          run_id?: string | null
           status?: string
           storage_path?: string | null
           updated_at?: string
@@ -724,6 +744,7 @@ export type Database = {
           order_id?: string
           prompt?: string | null
           provider?: string | null
+          run_id?: string | null
           status?: string
           storage_path?: string | null
           updated_at?: string
@@ -734,6 +755,13 @@ export type Database = {
             columns: ["order_id"]
             isOneToOne: false
             referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "renders_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: false
+            referencedRelation: "pipeline_runs"
             referencedColumns: ["id"]
           },
         ]
@@ -983,6 +1011,8 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      arm_pipeline_tick: { Args: never; Returns: undefined }
+      dispatch_ready_steps: { Args: { _run: string }; Returns: number }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -1004,6 +1034,7 @@ export type Database = {
         }[]
       }
       next_invoice_number: { Args: { _fy: string }; Returns: string }
+      pipeline_tick: { Args: never; Returns: undefined }
     }
     Enums: {
       app_role: "customer" | "stylist" | "support" | "admin" | "super_admin"
