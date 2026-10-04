@@ -157,3 +157,12 @@ export const StylistSchema = z.object({
   daily_routine: z.object({ morning: strs, night: strs }),
 });
 export type StylistOutput = z.infer<typeof StylistSchema>;
+
+// ---------- quality reviewer ----------
+export const ReviewSchema = z.object({
+  approved: z.boolean(),
+  needs_human: z.boolean(),
+  score: z.coerce.number(),
+  issues: z.array(z.object({ severity: z.enum(["low", "medium", "high"]), area: s, detail: s, fix: s })),
+  auto_fixes: z.array(z.object({ path: s, new_value: z.any() })),
+});
