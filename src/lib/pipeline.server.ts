@@ -67,11 +67,68 @@ export async function resumeAfterApproval(admin: Admin, runId: string, actorId: 
 }
 
 /** Worker entry: executes one claimed step and records the result. */
+// Mirrors the dependency list inside dispatch_ready_steps.
+const DEPS: [string, string][] = [["face_hair", "measurements"], ["body", "measurements"], ["skin", "measurements"], ["eyewear", "face_hair"], ["eyewear", "skin"],
+  ["stylist", "face_hair"], ["stylist", "body"], ["stylist", "skin"], ["stylist", "eyewear"], ["renders", "stylist"], ["review", "renders"],
+  ["report_build", "review"], ["pdf", "report_build"], ["delivery", "pdf"]];
+export function downstreamOf(step: string): string[] {
+  const out = new Set([step]); let grew = true;
+  while (grew) { grew = false; for (const [s, d] of DEPS) if (out.has(d) && !out.has(s)) { out.add(s); grew = true; } }
+  return [...out];
+}
+
+/** Admin: reset the given steps (and optionally everything after them) to pending and restart the run. */
+export async function rerunSteps(admin: Admin, runId: string, steps: string[], withDownstream: boolean) {
+  const keys = withDownstream ? [...new Set(steps.flatMap(downstreamOf))] : steps;
+  const { data: run } = await admin.from("pipeline_runs").select("id, order_id").eq("id", runId).single();
+  await admin.from("pipeline_steps").update({ status: "pending", attempt: 1, error: null, next_attempt_at: null, started_at: null, finished_at: null })
+    .eq("run_id", runId).in("step_key", keys);
+  await admin.from("pipeline_runs").update({ status: "running", finished_at: null }).eq("id", runId);
+  await admin.from("orders").update({ status: "processing" }).eq("id", run.order_id);
+  await admin.rpc("arm_pipeline_tick");
+  await runNextStep(admin, runId);
+  return keys;
+}
+
+/** Cost guardrails: per-report cap and daily budget (USD) from ai_settings. Returns a reason when exceeded. */
+async function guardrailBreach(admin: Admin, run: any): Promise<string | null> {
+  const { data } = await admin.from("ai_settings").select("key, value").in("key", ["max_cost_per_report_usd", "daily_budget_usd"]);
+  const get = (k: string) => Number((data ?? []).find((r: any) => r.key === k)?.value ?? 0) || 0;
+  const perReport = get("max_cost_per_report_usd"), daily = get("daily_budget_usd");
+  if (perReport && Number(run.total_cost_usd ?? 0) >= perReport) return `AI spend $${Number(run.total_cost_usd).toFixed(2)} reached the per-report cap of $${perReport}`;
+  if (daily) {
+    const since = new Date(); since.setUTCHours(0, 0, 0, 0);
+    const { data: steps } = await admin.from("pipeline_steps").select("cost_usd").gte("finished_at", since.toISOString()).limit(5000);
+    const spent = (steps ?? []).reduce((a: number, s: any) => a + Number(s.cost_usd ?? 0), 0);
+    if (spent >= daily) return `Today's AI spend $${spent.toFixed(2)} reached the daily budget of $${daily}`;
+  }
+  return null;
+}
+
+/** Admin "Test on order": re-run one analysis agent with setting overrides; nothing is saved. */
+export async function testAgent(admin: Admin, orderId: string, stepKey: StepKey, overrides: Record<string, unknown>) {
+  if (!["face_hair", "body", "skin", "eyewear", "stylist"].includes(stepKey)) throw new Error("Only analysis and stylist agents can be tested.");
+  const { data: run } = await admin.from("pipeline_runs").select("*").eq("order_id", orderId).order("created_at", { ascending: false }).limit(1).maybeSingle();
+  if (!run) throw new Error("That order has no report run yet.");
+  const ctx = await loadContext(admin, run);
+  ctx.settings = { ...ctx.settings, ...overrides };
+  const res = await AGENTS[stepKey](ctx);
+  return { before: ctx.outputs[stepKey] ?? null, after: res.output, model: res.model ?? null, tokensIn: res.tokensIn ?? null, tokensOut: res.tokensOut ?? null };
+}
+
 export async function executeStep(admin: Admin, stepId: string) {
   const { data: step } = await admin.from("pipeline_steps").select("*").eq("id", stepId).maybeSingle();
   if (!step || step.status !== "running") return { skipped: true };
   const { data: run } = await admin.from("pipeline_runs").select("*").eq("id", step.run_id).single();
   if (run.status !== "running") return { skipped: true };
+  const breach = await guardrailBreach(admin, run);
+  if (breach) {
+    await admin.from("pipeline_steps").update({ status: "pending", error: breach }).eq("id", stepId);
+    await admin.from("pipeline_runs").update({ status: "waiting_review" }).eq("id", run.id);
+    await admin.from("orders").update({ status: "review" }).eq("id", run.order_id);
+    await admin.from("review_tasks").insert({ order_id: run.order_id, reason: "Cost guardrail: " + breach, notes: `Paused before ${step.step_key}` });
+    return { paused: true };
+  }
   const ctx = await loadContext(admin, run);
   try {
     const res = await AGENTS[step.step_key as StepKey](ctx);
