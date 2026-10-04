@@ -4,4 +4,6 @@ export const SITE = {
   grievanceName: "Grievance Officer (name to be added)",
   grievanceEmail: "grievance@thegents.in",
   address: "Registered office address to be added, India",
+  // Support WhatsApp number in international format without "+" (placeholder).
+  whatsapp: "919999999999",
 };

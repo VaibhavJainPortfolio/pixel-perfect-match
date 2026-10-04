@@ -210,7 +210,7 @@ function Index() {
       </section>
 
       {/* 8. FAQ */}
-      <section className="mt-20 space-y-6">
+      <section id="faq" className="mt-20 scroll-mt-20 space-y-6">
         <SectionHeading eyebrow="FAQ" title="Questions, answered." />
         <Accordion type="single" collapsible className="rounded-lg border border-border bg-card px-5">
           {faqs.map((f) => (

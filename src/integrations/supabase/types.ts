@@ -1088,6 +1088,50 @@ export type Database = {
           },
         ]
       }
+      tickets: {
+        Row: {
+          assigned_to: string | null
+          created_at: string
+          id: string
+          message: string
+          order_id: string | null
+          status: Database["public"]["Enums"]["ticket_status"]
+          subject: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          assigned_to?: string | null
+          created_at?: string
+          id?: string
+          message: string
+          order_id?: string | null
+          status?: Database["public"]["Enums"]["ticket_status"]
+          subject: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          assigned_to?: string | null
+          created_at?: string
+          id?: string
+          message?: string
+          order_id?: string | null
+          status?: Database["public"]["Enums"]["ticket_status"]
+          subject?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tickets_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_roles: {
         Row: {
           created_at: string
@@ -1206,6 +1250,7 @@ export type Database = {
         | "delivery"
       step_status: "pending" | "running" | "succeeded" | "failed" | "skipped"
       submission_status: "draft" | "photos_pending" | "submitted"
+      ticket_status: "open" | "in_progress" | "resolved" | "closed"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -1402,6 +1447,7 @@ export const Constants = {
       ],
       step_status: ["pending", "running", "succeeded", "failed", "skipped"],
       submission_status: ["draft", "photos_pending", "submitted"],
+      ticket_status: ["open", "in_progress", "resolved", "closed"],
     },
   },
 } as const
