@@ -207,30 +207,25 @@ const AGENTS: Record<StepKey, (ctx: Ctx) => Promise<AgentResult>> = {
   },
 
   async face_hair(ctx) {
-    return aiJson(ctx, {
-      modelKey: "analysis_model", promptKey: "prompt_face_hair",
-      defaultPrompt: `You are an expert men's grooming analyst for Indian men. Using the photos and browser face measurements, determine face shape and recommend hair and beard. JSON: {"face_shape": "oval|round|square|oblong|heart|diamond|triangle", "confidence": 0-1, "features": string[], "hairstyles": [{"name": string, "why": string, "ask_barber": string}] (3 items), "hair_avoid": string[], "beard": {"style": string, "why": string, "maintenance": string}, "beard_avoid": string[]}. Respect the house rules provided.`,
-      input: { measurements: ctx.outputs.measurements?.slots?.face_front, age: ctx.basics.age, rules: [...await rules(ctx, "face_shape"), ...await rules(ctx, "hair"), ...await rules(ctx, "beard")] },
-      images: [await ctx.photoUrl("face_front"), await ctx.photoUrl("face_left"), await ctx.photoUrl("face_45")],
-    });
+    return claude(ctx, "prompt_face_hair", A.FaceHairSchema, {
+      basics: ctx.basics,
+      measurements: { face_front: ctx.outputs.measurements?.slots?.face_front, face_left: ctx.outputs.measurements?.slots?.face_left, face_right: ctx.outputs.measurements?.slots?.face_right, face_45: ctx.outputs.measurements?.slots?.face_45 },
+      house_rules: [...await rules(ctx, "face_shape"), ...await rules(ctx, "hair"), ...await rules(ctx, "beard")],
+    }, ["face_front", "face_left", "face_right", "face_45"]);
   },
 
   async body(ctx) {
-    return aiJson(ctx, {
-      modelKey: "analysis_model", promptKey: "prompt_body",
-      defaultPrompt: `You are a men's tailoring and fit expert. From the full-body photos, height, weight and pose measurements, describe body type and fit rules. JSON: {"body_type": string, "proportions": {"shoulders": string, "torso": string, "legs": string}, "fit_rules": string[] (5-8), "best_cuts": {"shirts": string, "trousers": string, "jackets": string}, "avoid": string[]}.`,
-      input: { height_cm: ctx.basics.height_cm, weight_kg: ctx.basics.weight_kg, bmi: ctx.outputs.measurements?.bmi, front: ctx.outputs.measurements?.slots?.body_front, side: ctx.outputs.measurements?.slots?.body_side },
-      images: [await ctx.photoUrl("body_front"), await ctx.photoUrl("body_side")],
-    });
+    return claude(ctx, "prompt_body", A.BodySchema, {
+      basics: ctx.basics, bmi: ctx.outputs.measurements?.bmi,
+      measurements: { body_front: ctx.outputs.measurements?.slots?.body_front, body_side: ctx.outputs.measurements?.slots?.body_side },
+    }, ["body_front", "body_side", "outfit"]);
   },
 
   async skin(ctx) {
-    return aiJson(ctx, {
-      modelKey: "analysis_model", promptKey: "prompt_skin",
-      defaultPrompt: `You are a colour analyst specialising in Indian skin tones. Use the wrist and face photos plus the sampled skin colour values (LAB, white-balanced against the background). JSON: {"undertone": "warm|cool|neutral|olive", "depth": "light|medium|tan|deep", "season": string, "palette": {"best": [{"name": string, "hex": string}] (10), "neutrals": [{"name": string, "hex": string}] (5), "avoid": [{"name": string, "hex": string}] (5)}, "metals": "gold|silver|both", "notes": string}.`,
-      input: { face_skin: ctx.outputs.measurements?.slots?.face_front?.skin, wrist: ctx.outputs.measurements?.slots?.wrist },
-      images: [await ctx.photoUrl("wrist"), await ctx.photoUrl("face_front")],
-    });
+    return claude(ctx, "prompt_skin", A.SkinSchema, {
+      basics: ctx.basics,
+      measurements: { face_front: ctx.outputs.measurements?.slots?.face_front, wrist: ctx.outputs.measurements?.slots?.wrist },
+    }, ["face_front", "wrist"]);
   },
 
   async eyewear(ctx) {
