@@ -187,7 +187,7 @@ function Upsells({ owned, prices }: { owned: string[]; prices: Home["prices"] })
   const cards = [
     { key: "occasion_pack", title: "Occasion Pack", body: "Looks for a wedding, interview or date night, built on your report." },
     { key: "style_report_plus", title: "Upgrade to Style Report Plus", body: "Add a one-on-one call with a TheGent stylist." },
-  ].filter((c) => owned.includes("style_report") || owned.includes("style_report_plus") ? !owned.includes(c.key) && !(c.key === "style_report_plus" && owned.includes("style_report_plus")) : c.key !== "occasion_pack" || true)
+  ]
    .filter((c) => !owned.includes(c.key));
   return (
     <section className="space-y-4">
