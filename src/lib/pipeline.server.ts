@@ -5,11 +5,13 @@ import { createOpenAI } from "@ai-sdk/openai";
 import { streamText } from "ai";
 import { resolveModel } from "./photo-check.server";
 import * as A from "./analysis-agents.server";
+import * as R from "./render/agent-render.server";
+import { getImageProvider } from "./render/providers.server";
+import { ProviderError } from "./render/types";
 
 type Admin = any;
 const GATEWAY = "https://ai.gateway.lovable.dev/v1";
 const RUN_HEADER = "X-Lovable-AIG-Run-ID";
-const DEFAULT_IMAGE_MODEL = "openai/gpt-image-2.5-sunburst";
 
 export const STEP_KEYS = ["measurements", "face_hair", "body", "skin", "eyewear", "stylist", "renders", "review", "report_build", "pdf", "delivery"] as const;
 export type StepKey = (typeof STEP_KEYS)[number];
@@ -18,6 +20,8 @@ const BUDGET_ITEM_CAP: Record<string, number> = { under_3000: 2500, "3000_7000":
 const BACKOFF_MS = [30_000, 120_000, 600_000]; // retry delays after failures 1, 2, 3
 const MAX_ATTEMPTS = BACKOFF_MS.length + 1;
 
+/** Thrown by multi-call steps (renders) to re-queue themselves immediately without using a retry. */
+class ContinueStep extends Error {}
 class StepError extends Error { constructor(msg: string, public retryable = true) { super(msg); } }
 
 // ---------- orchestration ----------
@@ -89,6 +93,11 @@ export async function executeStep(admin: Admin, stepId: string) {
     await runNextStep(admin, run.id);
     return { ok: true };
   } catch (e: any) {
+    if (e instanceof ContinueStep) {
+      await admin.from("pipeline_steps").update({ status: "pending", next_attempt_at: null, error: null }).eq("id", stepId).eq("status", "running");
+      await runNextStep(admin, run.id);
+      return { continued: true };
+    }
     const status = e?.statusCode ?? e?.status;
     const retryable = e instanceof StepError ? e.retryable : !(status && status >= 400 && status < 429);
     const msg = String(e?.message ?? e).slice(0, 1000);
@@ -294,71 +303,61 @@ const AGENTS: Record<StepKey, (ctx: Ctx) => Promise<AgentResult>> = {
   },
 
   async renders(ctx) {
-    const outfits: any[] = [...(ctx.outputs.stylist?.outfits ?? [])].sort((a, b) => (a.render_priority ?? 99) - (b.render_priority ?? 99));
-    const n = Math.max(0, Math.min(16, Number(ctx.settings["renders_per_report"] ?? 4) || 0));
-    const setting = String(ctx.settings["image_model"] ?? "");
-    const model = setting.startsWith("openai/gpt-image") ? setting : DEFAULT_IMAGE_MODEL;
-    const apiKey = process.env["LOVABLE_API_KEY"];
-    if (!apiKey) throw new StepError("AI is not configured", false);
-    const faceUrl = await ctx.photoUrl("face_front");
-    const bodyUrl = await ctx.photoUrl("body_front");
-    if (!faceUrl) throw new StepError("Face photo missing", false);
-    const [face, body] = await Promise.all([faceUrl, bodyUrl].map(async (u) => (u ? await (await fetch(u)).blob() : null)));
-    const done: string[] = [];
-    for (const look of outfits.slice(0, n)) { // one image per call
-      const key = `look_${String(look.id ?? done.length + 1).replace(/[^a-zA-Z0-9_-]/g, "")}`;
-      const { data: existing } = await ctx.admin.from("renders").select("status").eq("order_id", ctx.order.id).eq("look_key", key).maybeSingle();
-      if (existing?.status === "done") { done.push(key); continue; }
-      const prompt = `Photorealistic full-length fashion photo of the same man shown in the reference photos, keeping his exact face, skin tone, hair, beard and body shape. He is wearing: ${(look.items ?? []).map((i: any) => `${i.description} (${i.colour_hex})`).join("; ")}; shoes: ${typeof look.shoes === "string" ? look.shoes : JSON.stringify(look.shoes)}. Setting suited to ${look.occasion ?? "everyday"}. Natural light, clean background, standing pose, head to shoes visible. No text.`;
-      const form = new FormData();
-      form.append("model", model); form.append("prompt", prompt); form.append("size", "1024x1536");
-      form.append("image[]", new File([face!], "face.jpg", { type: "image/jpeg" }));
-      if (body) form.append("image[]", new File([body], "body.jpg", { type: "image/jpeg" }));
-      const res = await fetch(`${GATEWAY}/images/edits`, { method: "POST", headers: { Authorization: `Bearer ${apiKey}` }, body: form });
-      if (!res.ok) {
-        const t = (await res.text()).slice(0, 300);
-        throw new StepError(`Image ${key} failed (${res.status}): ${t}`, res.status === 429 || res.status >= 500);
-      }
-      const j: any = await res.json();
-      const b64 = j?.data?.[0]?.b64_json;
-      if (!b64) throw new StepError(`Image ${key} came back empty`);
-      const bytes = Uint8Array.from(atob(b64), (c) => c.charCodeAt(0));
-      const path = `${ctx.order.user_id}/${ctx.order.id}/${key}.png`;
-      const up = await ctx.admin.storage.from("renders").upload(path, bytes, { contentType: "image/png", upsert: true });
-      if (up.error) throw new StepError(up.error.message);
-      await ctx.admin.from("renders").upsert({ order_id: ctx.order.id, run_id: ctx.run.id, look_key: key, prompt, storage_path: path, provider: "lovable", model, status: "done", approved: true }, { onConflict: "order_id,look_key" });
-      done.push(key);
-    }
-    // Two extra head-and-shoulders eyewear renders (not counted in renders_per_report)
-    const ew = ctx.outputs.eyewear ?? {}, fh = ctx.outputs.face_hair ?? {};
-    const tpl = String(ctx.settings["prompt_render_eyewear"] ?? "Photorealistic head-and-shoulders portrait of the same man in the reference photo. Keep his exact face, skin tone, hair and beard: {haircut}, {beard}. He is wearing {frame_description} in {colour}, correctly sized for his face. Neutral background, soft daylight, no text, no logos.");
+    // One look per invocation (stays inside the request time limit); ContinueStep re-dispatches for the next.
+    const st = ctx.outputs.stylist ?? {}, bd = ctx.outputs.body ?? {}, fh = ctx.outputs.face_hair ?? {}, ew = ctx.outputs.eyewear ?? {};
+    const all: any[] = st.outfits ?? [];
+    const n = Math.max(1, Math.min(16, Number(ctx.settings["renders_per_report"] ?? 4) || 1));
+    const hero = all[0];
+    const picked = hero ? [hero, ...[...all.slice(1)].sort((a, b) => (a.render_priority ?? 99) - (b.render_priority ?? 99))].slice(0, n) : [];
+    const lookKey = (o: any, i: number) => `look_${String(o.id ?? i + 1).replace(/[^a-zA-Z0-9_-]/g, "")}`;
+    const tpl = String(ctx.settings["prompt_render"] ?? "");
+    if (!tpl.trim()) throw new StepError("Missing prompt_render in AI settings", false);
+    const base = {
+      age: ctx.basics.age, height: R.heightText(ctx.basics.height_cm), frame: bd.frame,
+      body_type_note: [bd.body_type?.replace(/_/g, " ") + " body type", bd.proportions_note].filter(Boolean).join(", "),
+      haircut: fh.recommended_haircut?.name, beard: fh.recommended_beard?.style,
+    };
+    const jobs: R.RenderJob[] = picked.map((o, i) => ({
+      key: lookKey(o, i), isHero: i === 0, size: "portrait", checkBody: true,
+      prompt: R.fillTemplate(tpl, { ...base,
+        outfit_items: [...(o.items ?? []).map((x: any) => `${x.description} (${x.colour_hex}, ${x.fit_note})`), `shoes: ${typeof o.shoes === "string" ? o.shoes : JSON.stringify(o.shoes)}`].join("; "),
+        setting_for_occasion: R.settingFor(o.occasion) }),
+    }));
+    const etpl = String(ctx.settings["prompt_render_eyewear"] ?? "Photorealistic head-and-shoulders portrait of the same man in the reference photo. Keep his exact face, skin tone, hair and beard: {haircut}, {beard}. He is wearing {frame_description} in {colour}, correctly sized for his face. Neutral background, soft daylight, no text, no logos.");
     const pf = (ew.prescription_frames ?? []).find((x: any) => x.rank === 1) ?? ew.prescription_frames?.[0];
     const sg = (ew.sunglasses ?? []).find((x: any) => x.rank === 1) ?? ew.sunglasses?.[0];
-    const jobs = [
+    for (const j of [
       pf && { key: "eyewear_frames", desc: `${pf.rim} ${pf.shape} ${pf.material} prescription glasses with clear lenses`, colour: pf.colour_name },
       sg && { key: "eyewear_sunglasses", desc: `${sg.style} sunglasses with ${sg.lens} lenses`, colour: sg.frame_colour_name },
-    ].filter(Boolean) as { key: string; desc: string; colour: string }[];
-    const eyewearDone: string[] = [];
-    for (const j of jobs) {
-      const { data: existing } = await ctx.admin.from("renders").select("status").eq("order_id", ctx.order.id).eq("look_key", j.key).maybeSingle();
-      if (existing?.status === "done") { eyewearDone.push(j.key); continue; }
-      const prompt = tpl.replace("{haircut}", fh.recommended_haircut?.name ?? "his current haircut").replace("{beard}", fh.recommended_beard?.style ?? "his current beard")
-        .replace("{frame_description}", j.desc).replace("{colour}", j.colour ?? "a flattering colour");
-      const form = new FormData();
-      form.append("model", model); form.append("prompt", prompt); form.append("size", "1024x1024");
-      form.append("image[]", new File([face!], "face.jpg", { type: "image/jpeg" }));
-      const res = await fetch(`${GATEWAY}/images/edits`, { method: "POST", headers: { Authorization: `Bearer ${apiKey}` }, body: form });
-      if (!res.ok) throw new StepError(`Image ${j.key} failed (${res.status}): ${(await res.text()).slice(0, 300)}`, res.status === 429 || res.status >= 500);
-      const b64 = ((await res.json()) as any)?.data?.[0]?.b64_json;
-      if (!b64) throw new StepError(`Image ${j.key} came back empty`);
-      const bytes = Uint8Array.from(atob(b64), (c) => c.charCodeAt(0));
-      const path = `${ctx.order.user_id}/${ctx.order.id}/${j.key}.png`;
-      const up = await ctx.admin.storage.from("renders").upload(path, bytes, { contentType: "image/png", upsert: true });
-      if (up.error) throw new StepError(up.error.message);
-      await ctx.admin.from("renders").upsert({ order_id: ctx.order.id, run_id: ctx.run.id, look_key: j.key, prompt, storage_path: path, provider: "lovable", model, status: "done", approved: true }, { onConflict: "order_id,look_key" });
-      eyewearDone.push(j.key);
+    ].filter(Boolean) as any[]) jobs.push({ key: j.key, isHero: false, size: "square", checkBody: false,
+      prompt: R.fillTemplate(etpl, { haircut: base.haircut, beard: base.beard, frame_description: j.desc, colour: j.colour }) });
+
+    const { data: rows } = await ctx.admin.from("renders").select("look_key, status").eq("order_id", ctx.order.id).in("status", ["done", "rejected"]);
+    const finished = new Map((rows ?? []).map((r: any) => [r.look_key, r.status]));
+    const next = jobs.find((j) => !finished.has(j.key));
+    if (next) {
+      const faceUrl = await ctx.photoUrl("face_front");
+      if (!faceUrl) throw new StepError("Face photo missing", false);
+      const refs = await R.loadRefs(ctx.admin, ctx.photos, next.checkBody ? ["face_front", "body_front"] : ["face_front"]);
+      try {
+        const r = await R.renderLook({ admin: ctx.admin, order: ctx.order, runId: ctx.run.id, settings: ctx.settings, job: next, refs,
+          faceUrl, bodyUrl: await ctx.photoUrl("body_front"), costFor: (m, a, b) => costFor(ctx.admin, m, a, b) });
+        finished.set(next.key, r.status);
+      } catch (e: any) {
+        if (e instanceof ProviderError) throw new StepError(e.message, e.retryable);
+        throw e;
+      }
+      if (jobs.some((j) => !finished.has(j.key))) throw new ContinueStep();
     }
-    return { output: { count: done.length, looks: done, eyewear: eyewearDone }, model };
+    const isDone = (k: string) => finished.get(k) === "done";
+    return { output: {
+      looks: jobs.filter((j) => j.size === "portrait" && isDone(j.key)).map((j) => j.key),
+      eyewear: jobs.filter((j) => j.size === "square" && isDone(j.key)).map((j) => j.key),
+      rejected: jobs.filter((j) => finished.get(j.key) === "rejected").map((j) => j.key),
+      hero: jobs[0] && isDone(jobs[0].key) ? jobs[0].key : null,
+      count: jobs.filter((j) => isDone(j.key)).length,
+      provider: getImageProvider(ctx.settings["image_provider"]).name,
+    } };
   },
 
   async review(ctx) {
@@ -380,7 +379,7 @@ const AGENTS: Record<StepKey, (ctx: Ctx) => Promise<AgentResult>> = {
       face_hair: o.face_hair, body: o.body, skin: o.skin, eyewear: o.eyewear,
       stylist: o.stylist, summary: o.stylist?.summary, outfits: o.stylist?.outfits, accessories: o.stylist?.accessories,
       watches: o.stylist?.accessories?.watches, fragrance: o.stylist?.fragrance, plan_90_days: o.stylist?.plan_90_days,
-      renders: o.renders?.looks ?? [], eyewear_renders: o.renders?.eyewear ?? [], review: { score: o.review?.score },
+      renders: o.renders?.looks ?? [], hero_render: o.renders?.hero ?? null, eyewear_renders: o.renders?.eyewear ?? [], review: { score: o.review?.score },
     };
     const { data: existing } = await ctx.admin.from("reports").select("id, version").eq("order_id", ctx.order.id).maybeSingle();
     let id = existing?.id;
