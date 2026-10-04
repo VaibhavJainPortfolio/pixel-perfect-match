@@ -25,7 +25,7 @@ const links = [
   ["/admin", "Overview"], ["/admin/orders", "Orders"], ["/admin/pipeline", "Pipeline"],
   ["/admin/review-queue", "Review queue"], ["/admin/users", "Users"], ["/admin/catalog", "Catalog"],
   ["/admin/rulebook", "Rulebook"], ["/admin/ai-settings", "AI settings"], ["/admin/coupons", "Coupons"],
-  ["/admin/payments", "Payments"], ["/admin/audit-log", "Audit log"],
+  ["/admin/payments", "Payments"], ["/admin/business", "Business"], ["/admin/audit-log", "Audit log"],
 ] as const;
 
 function AdminLayout() {
