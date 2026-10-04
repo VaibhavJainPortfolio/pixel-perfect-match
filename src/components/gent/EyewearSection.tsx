@@ -1,10 +1,10 @@
 import { Card, SectionHeading } from "./primitives";
 import { GhostButton } from "./buttons";
 
-type Frame = { rank: number; shape?: string; style?: string; rim?: string; colour_hex?: string; frame_colour_hex?: string; colour_name?: string; frame_colour_name?: string; why_it_works: string; product_id?: string; [k: string]: any };
+type Frame = Record<string, any> & { rank: number; why_it_works: string };
 
 /** Simple line drawing of a frame shape, in the recommended colour (dynamic per-report data, so inline colour). */
-export function FrameSvg({ shape, colour, rim, sun }: { shape: string; colour: string; rim?: string; sun?: boolean }) {
+export function FrameSvg({ shape, colour, rim, sun }: { shape: string; colour: string; rim?: string | undefined; sun?: boolean | undefined }) {
   const t = shape.toLowerCase();
   const lens = (x: number) => {
     if (/round|oval|panto|circle/.test(t)) return <ellipse cx={x} cy={30} rx={22} ry={t.includes("oval") ? 16 : 20} />;
@@ -26,7 +26,7 @@ export function FrameSvg({ shape, colour, rim, sun }: { shape: string; colour: s
   );
 }
 
-function ItemCard({ f, sun, shop }: { f: Frame; sun?: boolean; shop?: { name: string; url: string | null } }) {
+function ItemCard({ f, sun, shop }: { f: Frame; sun?: boolean; shop?: { name: string; url: string | null } | undefined }) {
   const name = sun ? f.style : f.shape;
   const colour = (sun ? f.frame_colour_hex : f.colour_hex) || "#9BA1B5";
   const query = encodeURIComponent(`${name} ${sun ? "sunglasses" : "eyeglasses"} ${sun ? f.frame_colour_name : f.colour_name}`);
