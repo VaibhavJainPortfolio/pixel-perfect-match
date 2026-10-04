@@ -71,6 +71,48 @@ export type Database = {
         }
         Relationships: []
       }
+      business_settings: {
+        Row: {
+          address: string
+          created_at: string
+          email: string | null
+          gstin: string
+          id: number
+          legal_name: string
+          phone: string | null
+          sac_code: string
+          state: string
+          state_code: string
+          updated_at: string
+        }
+        Insert: {
+          address?: string
+          created_at?: string
+          email?: string | null
+          gstin?: string
+          id?: number
+          legal_name?: string
+          phone?: string | null
+          sac_code?: string
+          state?: string
+          state_code?: string
+          updated_at?: string
+        }
+        Update: {
+          address?: string
+          created_at?: string
+          email?: string | null
+          gstin?: string
+          id?: number
+          legal_name?: string
+          phone?: string | null
+          sac_code?: string
+          state?: string
+          state_code?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       consents: {
         Row: {
           consent_type: Database["public"]["Enums"]["consent_type"]
@@ -143,6 +185,21 @@ export type Database = {
           valid_from?: string | null
           valid_to?: string | null
           value?: number
+        }
+        Relationships: []
+      }
+      invoice_counters: {
+        Row: {
+          fy: string
+          last_value: number
+        }
+        Insert: {
+          fy: string
+          last_value?: number
+        }
+        Update: {
+          fy?: string
+          last_value?: number
         }
         Relationships: []
       }
@@ -228,7 +285,10 @@ export type Database = {
           amount_paise: number
           coupon_code: string | null
           created_at: string
+          customer_state: string | null
           delivered_at: string | null
+          discount_paise: number
+          failure_reason: string | null
           gst_paise: number
           id: string
           invoice_number: string | null
@@ -237,6 +297,7 @@ export type Database = {
           product: Database["public"]["Enums"]["product_type"]
           razorpay_order_id: string | null
           razorpay_payment_id: string | null
+          reminder_sent_at: string | null
           status: Database["public"]["Enums"]["order_status"]
           total_paise: number
           updated_at: string
@@ -246,7 +307,10 @@ export type Database = {
           amount_paise: number
           coupon_code?: string | null
           created_at?: string
+          customer_state?: string | null
           delivered_at?: string | null
+          discount_paise?: number
+          failure_reason?: string | null
           gst_paise?: number
           id?: string
           invoice_number?: string | null
@@ -255,6 +319,7 @@ export type Database = {
           product?: Database["public"]["Enums"]["product_type"]
           razorpay_order_id?: string | null
           razorpay_payment_id?: string | null
+          reminder_sent_at?: string | null
           status?: Database["public"]["Enums"]["order_status"]
           total_paise: number
           updated_at?: string
@@ -264,7 +329,10 @@ export type Database = {
           amount_paise?: number
           coupon_code?: string | null
           created_at?: string
+          customer_state?: string | null
           delivered_at?: string | null
+          discount_paise?: number
+          failure_reason?: string | null
           gst_paise?: number
           id?: string
           invoice_number?: string | null
@@ -273,10 +341,32 @@ export type Database = {
           product?: Database["public"]["Enums"]["product_type"]
           razorpay_order_id?: string | null
           razorpay_payment_id?: string | null
+          reminder_sent_at?: string | null
           status?: Database["public"]["Enums"]["order_status"]
           total_paise?: number
           updated_at?: string
           user_id?: string
+        }
+        Relationships: []
+      }
+      payment_events: {
+        Row: {
+          created_at: string
+          event_id: string
+          event_type: string
+          payload: Json
+        }
+        Insert: {
+          created_at?: string
+          event_id: string
+          event_type: string
+          payload: Json
+        }
+        Update: {
+          created_at?: string
+          event_id?: string
+          event_type?: string
+          payload?: Json
         }
         Relationships: []
       }
@@ -554,6 +644,7 @@ export type Database = {
           last_seen_at: string | null
           marketing_opt_in: boolean
           phone: string | null
+          state: string | null
           status: Database["public"]["Enums"]["profile_status"]
           updated_at: string
           weight_kg: number | null
@@ -571,6 +662,7 @@ export type Database = {
           last_seen_at?: string | null
           marketing_opt_in?: boolean
           phone?: string | null
+          state?: string | null
           status?: Database["public"]["Enums"]["profile_status"]
           updated_at?: string
           weight_kg?: number | null
@@ -588,6 +680,7 @@ export type Database = {
           last_seen_at?: string | null
           marketing_opt_in?: boolean
           phone?: string | null
+          state?: string | null
           status?: Database["public"]["Enums"]["profile_status"]
           updated_at?: string
           weight_kg?: number | null
@@ -897,6 +990,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      increment_coupon_use: { Args: { _code: string }; Returns: undefined }
       is_admin: { Args: { _user_id: string }; Returns: boolean }
       is_staff: { Args: { _user_id: string }; Returns: boolean }
       my_sessions: {
@@ -909,6 +1003,7 @@ export type Database = {
           user_agent: string
         }[]
       }
+      next_invoice_number: { Args: { _fy: string }; Returns: string }
     }
     Enums: {
       app_role: "customer" | "stylist" | "support" | "admin" | "super_admin"
