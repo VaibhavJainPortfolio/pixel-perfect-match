@@ -5,5 +5,5 @@ export const SITE = {
   grievanceEmail: "grievance@thegents.in",
   address: "Registered office address to be added, India",
   // Support WhatsApp number in international format without "+" (placeholder).
-  whatsapp: "919999999999",
+  whatsapp: "917208059991",
 };
