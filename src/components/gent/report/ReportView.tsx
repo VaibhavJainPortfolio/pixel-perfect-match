@@ -11,15 +11,15 @@ export const AI_LABEL = "AI render of you – likeness approximate";
 const DISCLOSURE = "Some shop links are affiliate links: we may earn a small commission at no extra cost to you. Prices are approximate.";
 
 type Props = {
-  bundle: ReportBundle; print?: boolean;
-  checked?: Record<string, boolean>; onToggle?: (key: string, v: boolean) => void;
+  bundle: ReportBundle; print?: boolean | undefined;
+  checked?: Record<string, boolean>; onToggle?: ((key: string, v: boolean) => void) | undefined;
 };
 
 const list = (v: unknown): string[] =>
   Array.isArray(v) ? v.map((x) => (typeof x === "string" ? x : Object.values(x ?? {}).filter(Boolean).join(" — "))) : v ? [String(v)] : [];
 const title = (s?: string) => (s ?? "").replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
 
-function Section({ n, eyebrow, heading, children, print }: { n: number; eyebrow: string; heading: string; children: ReactNode; print?: boolean }) {
+function Section({ n, eyebrow, heading, children, print }: { n: number; eyebrow: string; heading: string; children: ReactNode; print?: boolean | undefined }) {
   return (
     <section className={cn("report-section", print && "break-before-page")} id={`s${n}`}>
       <Card className="space-y-5 p-5 sm:p-8">
@@ -113,7 +113,7 @@ function shopUrl(it: any, shop: ReportBundle["shop"]) {
   return { url: p?.url || `https://www.myntra.com/${encodeURIComponent(String(it.description ?? it.category ?? "").slice(0, 60).replace(/\s+/g, "-"))}`, name: p?.name };
 }
 
-function OutfitCard({ o, print }: { o: any; print?: boolean }) {
+function OutfitCard({ o, print }: { o: any; print?: boolean | undefined }) {
   const [open, setOpen] = useState(false);
   const show = print || open;
   return (
