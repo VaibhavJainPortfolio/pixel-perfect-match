@@ -57,7 +57,7 @@ export async function razorpayFetch(path: string, init: { method: string; body?:
   const res = await fetch(`https://api.razorpay.com/v1${path}`, {
     method: init.method,
     headers: { "content-type": "application/json", authorization: "Basic " + Buffer.from(`${id}:${secret}`).toString("base64") },
-    body: init.body ? JSON.stringify(init.body) : undefined,
+    body: init.body ? JSON.stringify(init.body) : null,
   });
   const json = await res.json();
   if (!res.ok) throw new Error(json?.error?.description ?? "Razorpay request failed");

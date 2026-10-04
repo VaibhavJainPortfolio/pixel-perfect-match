@@ -29,7 +29,7 @@ function Page() {
   }, []);
   const save = async (e: React.FormEvent) => {
     e.preventDefault(); setBusy(true);
-    const patch = Object.fromEntries(FIELDS.map(([k]) => [k, (form[k] ?? "").trim()]));
+    const patch = Object.fromEntries(FIELDS.map(([k]) => [k, (form[k] ?? "").trim()])) as Record<Key, string>;
     const { error } = await supabase.from("business_settings").update(patch).eq("id", 1);
     setBusy(false);
     error ? toast.error(error.message) : toast.success("Saved. New invoices will use these details.");
