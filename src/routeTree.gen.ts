@@ -40,6 +40,7 @@ import { Route as AuthenticatedAdminUsersIndexRouteImport } from './routes/_auth
 import { Route as AuthenticatedAdminUsersIdRouteImport } from './routes/_authenticated/admin.users.$id'
 import { Route as AuthenticatedAppReportReportIdRouteImport } from './routes/_authenticated/app.report.$reportId'
 import { Route as ApiPublicCronPaymentRemindersRouteImport } from './routes/api/public/cron/payment-reminders'
+import { Route as ApiPublicPipelineStepRouteImport } from './routes/api/public/pipeline/step'
 import { Route as AuthenticatedAppOrderOrderIdBasicsRouteImport } from './routes/_authenticated/app.order.$orderId.basics'
 import { Route as AuthenticatedAppOrderOrderIdPhotosRouteImport } from './routes/_authenticated/app.order.$orderId.photos'
 import { Route as AuthenticatedAppOrderOrderIdProcessingRouteImport } from './routes/_authenticated/app.order.$orderId.processing'
@@ -215,6 +216,11 @@ const ApiPublicCronPaymentRemindersRoute =
     path: '/api/public/cron/payment-reminders',
     getParentRoute: () => rootRouteImport,
   } as any)
+const ApiPublicPipelineStepRoute = ApiPublicPipelineStepRouteImport.update({
+  id: '/api/public/pipeline/step',
+  path: '/api/public/pipeline/step',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AuthenticatedAppOrderOrderIdBasicsRoute =
   AuthenticatedAppOrderOrderIdBasicsRouteImport.update({
     id: '/order/$orderId/basics',
@@ -263,6 +269,7 @@ export interface FileRoutesByFullPath {
   '/admin/users/$id': typeof AuthenticatedAdminUsersIdRoute
   '/app/report/$reportId': typeof AuthenticatedAppReportReportIdRoute
   '/api/public/cron/payment-reminders': typeof ApiPublicCronPaymentRemindersRoute
+  '/api/public/pipeline/step': typeof ApiPublicPipelineStepRoute
   '/admin/orders/': typeof AuthenticatedAdminOrdersIndexRoute
   '/admin/users/': typeof AuthenticatedAdminUsersIndexRoute
   '/app/order/$orderId/basics': typeof AuthenticatedAppOrderOrderIdBasicsRoute
@@ -296,6 +303,7 @@ export interface FileRoutesByTo {
   '/admin/users/$id': typeof AuthenticatedAdminUsersIdRoute
   '/app/report/$reportId': typeof AuthenticatedAppReportReportIdRoute
   '/api/public/cron/payment-reminders': typeof ApiPublicCronPaymentRemindersRoute
+  '/api/public/pipeline/step': typeof ApiPublicPipelineStepRoute
   '/admin/orders': typeof AuthenticatedAdminOrdersIndexRoute
   '/admin/users': typeof AuthenticatedAdminUsersIndexRoute
   '/app/order/$orderId/basics': typeof AuthenticatedAppOrderOrderIdBasicsRoute
@@ -333,6 +341,7 @@ export interface FileRoutesById {
   '/_authenticated/admin/users/$id': typeof AuthenticatedAdminUsersIdRoute
   '/_authenticated/app/report/$reportId': typeof AuthenticatedAppReportReportIdRoute
   '/api/public/cron/payment-reminders': typeof ApiPublicCronPaymentRemindersRoute
+  '/api/public/pipeline/step': typeof ApiPublicPipelineStepRoute
   '/_authenticated/admin/orders/': typeof AuthenticatedAdminOrdersIndexRoute
   '/_authenticated/admin/users/': typeof AuthenticatedAdminUsersIndexRoute
   '/_authenticated/app/order/$orderId/basics': typeof AuthenticatedAppOrderOrderIdBasicsRoute
@@ -370,6 +379,7 @@ export interface FileRouteTypes {
     | '/admin/users/$id'
     | '/app/report/$reportId'
     | '/api/public/cron/payment-reminders'
+    | '/api/public/pipeline/step'
     | '/admin/orders/'
     | '/admin/users/'
     | '/app/order/$orderId/basics'
@@ -403,6 +413,7 @@ export interface FileRouteTypes {
     | '/admin/users/$id'
     | '/app/report/$reportId'
     | '/api/public/cron/payment-reminders'
+    | '/api/public/pipeline/step'
     | '/admin/orders'
     | '/admin/users'
     | '/app/order/$orderId/basics'
@@ -439,6 +450,7 @@ export interface FileRouteTypes {
     | '/_authenticated/admin/users/$id'
     | '/_authenticated/app/report/$reportId'
     | '/api/public/cron/payment-reminders'
+    | '/api/public/pipeline/step'
     | '/_authenticated/admin/orders/'
     | '/_authenticated/admin/users/'
     | '/_authenticated/app/order/$orderId/basics'
@@ -458,6 +470,7 @@ export interface RootRouteChildren {
   LegalTermsRoute: typeof LegalTermsRoute
   ApiPublicRazorpayWebhookRoute: typeof ApiPublicRazorpayWebhookRoute
   ApiPublicCronPaymentRemindersRoute: typeof ApiPublicCronPaymentRemindersRoute
+  ApiPublicPipelineStepRoute: typeof ApiPublicPipelineStepRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -679,6 +692,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicCronPaymentRemindersRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/pipeline/step': {
+      id: '/api/public/pipeline/step'
+      path: '/api/public/pipeline/step'
+      fullPath: '/api/public/pipeline/step'
+      preLoaderRoute: typeof ApiPublicPipelineStepRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/_authenticated/app/order/$orderId/basics': {
       id: '/_authenticated/app/order/$orderId/basics'
       path: '/order/$orderId/basics'
@@ -791,6 +811,7 @@ const rootRouteChildren: RootRouteChildren = {
   LegalTermsRoute: LegalTermsRoute,
   ApiPublicRazorpayWebhookRoute: ApiPublicRazorpayWebhookRoute,
   ApiPublicCronPaymentRemindersRoute: ApiPublicCronPaymentRemindersRoute,
+  ApiPublicPipelineStepRoute: ApiPublicPipelineStepRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
