@@ -86,7 +86,8 @@ export async function executeStep(admin: Admin, stepId: string) {
       await admin.from("pipeline_steps").update({ status: "pending" }).eq("id", stepId); // re-opened until a stylist approves
       await admin.from("pipeline_runs").update({ status: "waiting_review" }).eq("id", run.id);
       await admin.from("orders").update({ status: "review" }).eq("id", run.order_id);
-      await admin.from("review_tasks").insert({ order_id: run.order_id, reason: "AI review flagged: " + (res.output.issues ?? []).slice(0, 3).join("; ") });
+      await admin.from("review_tasks").insert({ order_id: run.order_id, reason: "AI review flagged: " + [...(res.output.hard_rule_reasons ?? []), ...(res.output.issues ?? []).filter((i: any) => i.severity !== "low").map((i: any) => `${i.area}: ${i.detail}`)].slice(0, 4).join("; "),
+        notes: JSON.stringify({ score: res.output.score, issues: res.output.issues, proposed_fixes: res.output.auto_fixes }).slice(0, 8000) });
       return { waiting_review: true };
     }
     if (step.step_key === "delivery") return { done: true };
@@ -216,6 +217,33 @@ async function claude(ctx: Ctx, promptKey: string, schema: any, input: unknown, 
     if (e instanceof A.AgentError) throw new StepError(e.message, e.retryable);
     throw e;
   }
+}
+
+// Applies reviewer auto_fixes ("stylist.outfits.3.name") to succeeded step outputs; only existing leaf values
+// in analysis/stylist outputs can be replaced, so a fix can't add structure or touch other steps.
+const FIXABLE = new Set(["face_hair", "body", "skin", "eyewear", "stylist"]);
+async function applyAutoFixes(ctx: Ctx, fixes: { path: string; new_value: unknown }[]) {
+  const applied: string[] = [];
+  const touched = new Set<string>();
+  for (const f of fixes ?? []) {
+    const [root, ...rest] = String(f.path ?? "").replace(/\[(\d+)\]/g, ".$1").split(".").filter(Boolean);
+    const target: any = root && ctx.outputs[root as StepKey];
+    if (!root || !FIXABLE.has(root) || !rest.length || !target) continue;
+    let node = target;
+    for (const k of rest.slice(0, -1)) { node = node?.[k]; if (node == null || typeof node !== "object") break; }
+    const leaf = rest[rest.length - 1]!;
+    if (node == null || typeof node !== "object" || !(leaf in node)) continue;
+    const old = node[leaf];
+    if (old !== null && typeof old === "object") continue; // leaf values only
+    if (old !== null && f.new_value !== null && typeof old !== typeof f.new_value) continue;
+    node[leaf] = f.new_value;
+    touched.add(root); applied.push(f.path);
+  }
+  for (const root of touched) {
+    await ctx.admin.from("pipeline_steps").update({ output: ctx.outputs[root as StepKey] })
+      .eq("run_id", ctx.run.id).eq("step_key", root).eq("status", "succeeded");
+  }
+  return applied;
 }
 
 // ---------- agents ----------
@@ -361,14 +389,37 @@ const AGENTS: Record<StepKey, (ctx: Ctx) => Promise<AgentResult>> = {
   },
 
   async review(ctx) {
-    const { count } = await ctx.admin.from("renders").select("id", { count: "exact", head: true }).eq("order_id", ctx.order.id).eq("status", "done");
-    const r = await aiJson(ctx, {
-      modelKey: "reviewer_model", promptKey: "prompt_review",
-      defaultPrompt: `You are the final quality reviewer for a paid men's style report. Check internal consistency (palette vs outfit colours, face shape vs hairstyles/eyewear, body fit rules vs outfits, budget band respected, exactly 16 outfits, culturally appropriate for India, nothing offensive or unsafe). JSON: {"score": 0-100, "issues": string[], "needs_human": boolean}. Set needs_human true if score < 75 or any serious issue.`,
-      input: { basics: ctx.basics, face_hair: ctx.outputs.face_hair, body: ctx.outputs.body, skin: ctx.outputs.skin, eyewear: ctx.outputs.eyewear, stylist: ctx.outputs.stylist, renders_done: count },
-    });
-    const outfits = ctx.outputs.stylist?.outfits ?? [];
-    r.output.needs_human = r.output.needs_human === true || outfits.length < 16;
+    const { data: renderRows } = await ctx.admin.from("renders")
+      .select("look_key, status, approved, is_hero, likeness_score, body_preserved, quality_issues").eq("order_id", ctx.order.id);
+    const renders = renderRows ?? [];
+    const approvedRenders = renders.filter((r: any) => r.status === "done" && r.approved).length;
+    const o = ctx.outputs;
+    const agents = { face_hair: o.face_hair, body: o.body, skin: o.skin, eyewear: o.eyewear, stylist: o.stylist };
+    const system = ctx.settings["prompt_review"];
+    if (typeof system !== "string" || !system.trim()) throw new StepError("Missing prompt prompt_review in AI settings", false);
+    let r: AgentResult;
+    try {
+      r = await A.runClaudeAgent({
+        model: A.resolveClaudeModel(ctx.settings["reviewer_model"]), system, schema: A.ReviewSchema, maxOutputTokens: 16000, imageUrls: [],
+        input: { customer: { age: ctx.basics.age, city: ctx.basics.city, budget_band: ctx.basics.budget_band }, ...agents, renders, approved_render_count: approvedRenders },
+      });
+    } catch (e: any) {
+      if (e instanceof A.AgentError) throw new StepError(e.message, e.retryable);
+      throw e;
+    }
+    const out = r.output;
+    // Hard rules enforced in code regardless of what the model said.
+    const norm = (v: unknown) => { const n = Number(v); return Number.isFinite(n) ? (n > 1 ? n / 100 : n) : null; };
+    const lowConf = (["face_hair", "body", "skin", "eyewear"] as const)
+      .map((k) => [k, norm((o as any)[k]?.confidence)] as const).filter(([, v]) => v !== null && v < 0.6).map(([k]) => k);
+    const reasons: string[] = [];
+    if (out.issues.some((i: any) => i.severity === "high")) reasons.push("high-severity issue");
+    if (lowConf.length) reasons.push(`low confidence: ${lowConf.join(", ")}`);
+    if (approvedRenders < 3) reasons.push(`only ${approvedRenders} approved renders`);
+    out.needs_human = out.needs_human || reasons.length > 0;
+    out.approved = out.approved && !out.needs_human;
+    out.hard_rule_reasons = reasons;
+    out.applied_fixes = out.needs_human ? [] : await applyAutoFixes(ctx, out.auto_fixes);
     return r;
   },
 
