@@ -14,3 +14,6 @@
 - Signed-in pages live under `src/routes/_authenticated/`; admin pages under `_authenticated/admin*` gated by a staff-role check in `admin.tsx` — one gate per area.
 - Storage buckets are private; object paths start with the owner's user id so folder-based RLS works; read via signed URLs only.
 - Shared UI primitives live in `src/components/gent/`; colors come only from tokens in `src/styles.css` (dark on :root, `.light` override).
+- Access checks (staff role, suspended/deleted status, onboarding) go through the `getMyAccess` server fn in `src/lib/account.functions.ts`; `/app` and `/admin` layouts both use it — one server-side source of truth.
+- Account deletion/photo deletion run as authenticated server fns using the admin client only after auth; profiles are anonymised (never hard-deleted) so orders/invoices stay for tax records.
+- Consent changes always insert new `consents` rows; the latest row per type is current — history is never overwritten.
