@@ -16,6 +16,7 @@ import { Route as LoginRouteImport } from './routes/login'
 import { Route as PricingRouteImport } from './routes/pricing'
 import { Route as SampleReportRouteImport } from './routes/sample-report'
 import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated/admin'
+import { Route as AuthenticatedAppRouteImport } from './routes/_authenticated/app'
 import { Route as LegalPrivacyRouteImport } from './routes/legal.privacy'
 import { Route as LegalRefundsRouteImport } from './routes/legal.refunds'
 import { Route as LegalTermsRouteImport } from './routes/legal.terms'
@@ -72,6 +73,11 @@ const SampleReportRoute = SampleReportRouteImport.update({
 const AuthenticatedAdminRoute = AuthenticatedAdminRouteImport.update({
   id: '/admin',
   path: '/admin',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedAppRoute = AuthenticatedAppRouteImport.update({
+  id: '/app',
+  path: '/app',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const LegalPrivacyRoute = LegalPrivacyRouteImport.update({
@@ -143,20 +149,20 @@ const AuthenticatedAdminRulebookRoute =
     getParentRoute: () => AuthenticatedAdminRoute,
   } as any)
 const AuthenticatedAppIndexRoute = AuthenticatedAppIndexRouteImport.update({
-  id: '/app/',
-  path: '/app/',
-  getParentRoute: () => AuthenticatedRouteRoute,
+  id: '/',
+  path: '/',
+  getParentRoute: () => AuthenticatedAppRoute,
 } as any)
 const AuthenticatedAppAccountRoute = AuthenticatedAppAccountRouteImport.update({
-  id: '/app/account',
-  path: '/app/account',
-  getParentRoute: () => AuthenticatedRouteRoute,
+  id: '/account',
+  path: '/account',
+  getParentRoute: () => AuthenticatedAppRoute,
 } as any)
 const AuthenticatedAppCheckoutRoute =
   AuthenticatedAppCheckoutRouteImport.update({
-    id: '/app/checkout',
-    path: '/app/checkout',
-    getParentRoute: () => AuthenticatedRouteRoute,
+    id: '/checkout',
+    path: '/checkout',
+    getParentRoute: () => AuthenticatedAppRoute,
   } as any)
 const AuthenticatedAdminOrdersIndexRoute =
   AuthenticatedAdminOrdersIndexRouteImport.update({
@@ -184,27 +190,27 @@ const AuthenticatedAdminUsersIdRoute =
   } as any)
 const AuthenticatedAppReportReportIdRoute =
   AuthenticatedAppReportReportIdRouteImport.update({
-    id: '/app/report/$reportId',
-    path: '/app/report/$reportId',
-    getParentRoute: () => AuthenticatedRouteRoute,
+    id: '/report/$reportId',
+    path: '/report/$reportId',
+    getParentRoute: () => AuthenticatedAppRoute,
   } as any)
 const AuthenticatedAppOrderOrderIdBasicsRoute =
   AuthenticatedAppOrderOrderIdBasicsRouteImport.update({
-    id: '/app/order/$orderId/basics',
-    path: '/app/order/$orderId/basics',
-    getParentRoute: () => AuthenticatedRouteRoute,
+    id: '/order/$orderId/basics',
+    path: '/order/$orderId/basics',
+    getParentRoute: () => AuthenticatedAppRoute,
   } as any)
 const AuthenticatedAppOrderOrderIdPhotosRoute =
   AuthenticatedAppOrderOrderIdPhotosRouteImport.update({
-    id: '/app/order/$orderId/photos',
-    path: '/app/order/$orderId/photos',
-    getParentRoute: () => AuthenticatedRouteRoute,
+    id: '/order/$orderId/photos',
+    path: '/order/$orderId/photos',
+    getParentRoute: () => AuthenticatedAppRoute,
   } as any)
 const AuthenticatedAppOrderOrderIdProcessingRoute =
   AuthenticatedAppOrderOrderIdProcessingRouteImport.update({
-    id: '/app/order/$orderId/processing',
-    path: '/app/order/$orderId/processing',
-    getParentRoute: () => AuthenticatedRouteRoute,
+    id: '/order/$orderId/processing',
+    path: '/order/$orderId/processing',
+    getParentRoute: () => AuthenticatedAppRoute,
   } as any)
 
 export interface FileRoutesByFullPath {
@@ -214,6 +220,7 @@ export interface FileRoutesByFullPath {
   '/pricing': typeof PricingRoute
   '/sample-report': typeof SampleReportRoute
   '/admin': typeof AuthenticatedAdminRouteWithChildren
+  '/app': typeof AuthenticatedAppRouteWithChildren
   '/legal/privacy': typeof LegalPrivacyRoute
   '/legal/refunds': typeof LegalRefundsRoute
   '/legal/terms': typeof LegalTermsRoute
@@ -277,6 +284,7 @@ export interface FileRoutesById {
   '/pricing': typeof PricingRoute
   '/sample-report': typeof SampleReportRoute
   '/_authenticated/admin': typeof AuthenticatedAdminRouteWithChildren
+  '/_authenticated/app': typeof AuthenticatedAppRouteWithChildren
   '/legal/privacy': typeof LegalPrivacyRoute
   '/legal/refunds': typeof LegalRefundsRoute
   '/legal/terms': typeof LegalTermsRoute
@@ -310,6 +318,7 @@ export interface FileRouteTypes {
     | '/pricing'
     | '/sample-report'
     | '/admin'
+    | '/app'
     | '/legal/privacy'
     | '/legal/refunds'
     | '/legal/terms'
@@ -372,6 +381,7 @@ export interface FileRouteTypes {
     | '/pricing'
     | '/sample-report'
     | '/_authenticated/admin'
+    | '/_authenticated/app'
     | '/legal/privacy'
     | '/legal/refunds'
     | '/legal/terms'
@@ -460,6 +470,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/app': {
+      id: '/_authenticated/app'
+      path: '/app'
+      fullPath: '/app'
+      preLoaderRoute: typeof AuthenticatedAppRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/legal/privacy': {
       id: '/legal/privacy'
       path: '/legal/privacy'
@@ -546,24 +563,24 @@ declare module '@tanstack/react-router' {
     }
     '/_authenticated/app/': {
       id: '/_authenticated/app/'
-      path: '/app'
+      path: '/'
       fullPath: '/app/'
       preLoaderRoute: typeof AuthenticatedAppIndexRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
+      parentRoute: typeof AuthenticatedAppRoute
     }
     '/_authenticated/app/account': {
       id: '/_authenticated/app/account'
-      path: '/app/account'
+      path: '/account'
       fullPath: '/app/account'
       preLoaderRoute: typeof AuthenticatedAppAccountRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
+      parentRoute: typeof AuthenticatedAppRoute
     }
     '/_authenticated/app/checkout': {
       id: '/_authenticated/app/checkout'
-      path: '/app/checkout'
+      path: '/checkout'
       fullPath: '/app/checkout'
       preLoaderRoute: typeof AuthenticatedAppCheckoutRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
+      parentRoute: typeof AuthenticatedAppRoute
     }
     '/_authenticated/admin/orders/': {
       id: '/_authenticated/admin/orders/'
@@ -595,31 +612,31 @@ declare module '@tanstack/react-router' {
     }
     '/_authenticated/app/report/$reportId': {
       id: '/_authenticated/app/report/$reportId'
-      path: '/app/report/$reportId'
+      path: '/report/$reportId'
       fullPath: '/app/report/$reportId'
       preLoaderRoute: typeof AuthenticatedAppReportReportIdRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
+      parentRoute: typeof AuthenticatedAppRoute
     }
     '/_authenticated/app/order/$orderId/basics': {
       id: '/_authenticated/app/order/$orderId/basics'
-      path: '/app/order/$orderId/basics'
+      path: '/order/$orderId/basics'
       fullPath: '/app/order/$orderId/basics'
       preLoaderRoute: typeof AuthenticatedAppOrderOrderIdBasicsRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
+      parentRoute: typeof AuthenticatedAppRoute
     }
     '/_authenticated/app/order/$orderId/photos': {
       id: '/_authenticated/app/order/$orderId/photos'
-      path: '/app/order/$orderId/photos'
+      path: '/order/$orderId/photos'
       fullPath: '/app/order/$orderId/photos'
       preLoaderRoute: typeof AuthenticatedAppOrderOrderIdPhotosRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
+      parentRoute: typeof AuthenticatedAppRoute
     }
     '/_authenticated/app/order/$orderId/processing': {
       id: '/_authenticated/app/order/$orderId/processing'
-      path: '/app/order/$orderId/processing'
+      path: '/order/$orderId/processing'
       fullPath: '/app/order/$orderId/processing'
       preLoaderRoute: typeof AuthenticatedAppOrderOrderIdProcessingRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
+      parentRoute: typeof AuthenticatedAppRoute
     }
   }
 }
@@ -659,8 +676,7 @@ const AuthenticatedAdminRouteChildren: AuthenticatedAdminRouteChildren = {
 const AuthenticatedAdminRouteWithChildren =
   AuthenticatedAdminRoute._addFileChildren(AuthenticatedAdminRouteChildren)
 
-interface AuthenticatedRouteRouteChildren {
-  AuthenticatedAdminRoute: typeof AuthenticatedAdminRouteWithChildren
+interface AuthenticatedAppRouteChildren {
   AuthenticatedAppAccountRoute: typeof AuthenticatedAppAccountRoute
   AuthenticatedAppCheckoutRoute: typeof AuthenticatedAppCheckoutRoute
   AuthenticatedAppIndexRoute: typeof AuthenticatedAppIndexRoute
@@ -670,8 +686,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedAppOrderOrderIdProcessingRoute: typeof AuthenticatedAppOrderOrderIdProcessingRoute
 }
 
-const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
-  AuthenticatedAdminRoute: AuthenticatedAdminRouteWithChildren,
+const AuthenticatedAppRouteChildren: AuthenticatedAppRouteChildren = {
   AuthenticatedAppAccountRoute: AuthenticatedAppAccountRoute,
   AuthenticatedAppCheckoutRoute: AuthenticatedAppCheckoutRoute,
   AuthenticatedAppIndexRoute: AuthenticatedAppIndexRoute,
@@ -682,6 +697,19 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
     AuthenticatedAppOrderOrderIdPhotosRoute,
   AuthenticatedAppOrderOrderIdProcessingRoute:
     AuthenticatedAppOrderOrderIdProcessingRoute,
+}
+
+const AuthenticatedAppRouteWithChildren =
+  AuthenticatedAppRoute._addFileChildren(AuthenticatedAppRouteChildren)
+
+interface AuthenticatedRouteRouteChildren {
+  AuthenticatedAdminRoute: typeof AuthenticatedAdminRouteWithChildren
+  AuthenticatedAppRoute: typeof AuthenticatedAppRouteWithChildren
+}
+
+const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
+  AuthenticatedAdminRoute: AuthenticatedAdminRouteWithChildren,
+  AuthenticatedAppRoute: AuthenticatedAppRouteWithChildren,
 }
 
 const AuthenticatedRouteRouteWithChildren =
