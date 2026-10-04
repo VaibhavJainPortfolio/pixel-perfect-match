@@ -65,7 +65,7 @@ async function toImagePart(url: string) {
 }
 
 export async function runClaudeAgent<T extends z.ZodTypeAny>(opts: {
-  model: string; system: string; schema: T; input: unknown; imageUrls: (string | null)[];
+  model: string; system: string; schema: T; input: unknown; imageUrls: (string | null)[]; maxOutputTokens?: number;
 }): Promise<{ output: z.infer<T>; model: string; tokensIn: number; tokensOut: number }> {
   const apiKey = process.env["LOVABLE_API_KEY"];
   if (!apiKey) throw new AgentError("AI is not configured", false);
@@ -87,7 +87,7 @@ export async function runClaudeAgent<T extends z.ZodTypeAny>(opts: {
 
   for (let attempt = 0; attempt < 2; attempt++) {
     const result = streamText({
-      model: anthropic(opts.model), maxOutputTokens: 8000, maxRetries: 0,
+      model: anthropic(opts.model), maxOutputTokens: opts.maxOutputTokens ?? 8000, maxRetries: 0,
       system: opts.system + "\nRespond with a single JSON object only — no markdown, no commentary.",
       messages,
     });
@@ -135,3 +135,25 @@ export const EyewearSchema = z.object({
   brands: z.array(z.object({ brand: s, price_band: s, best_for: s })),
   confidence: conf, measurement_note: s,
 });
+
+// ---------- head stylist ----------
+const strOrList = z.union([s, strs, z.array(z.record(z.string(), z.any()))]);
+export const StylistSchema = z.object({
+  summary: z.object({ headline: s, three_biggest_wins: z.array(z.object({ title: s, detail: s })).length(3) }),
+  outfits: z.array(z.object({
+    id: z.coerce.string(), occasion: s, name: s, why_it_works: s,
+    items: z.array(z.object({ category: s, description: s, colour_hex: s, fit_note: s, product_id: s.nullish(), price_band: s })).min(1),
+    shoes: strOrList, accessories: strOrList, render_priority: z.coerce.number().int().min(1).max(16),
+  })).length(16),
+  accessories: z.object({
+    watches: z.array(z.object({ use_case: s, model_suggestion: s, case_mm: num, dial: s, strap: s, price_band: s, wear_with: strOrList })).min(1),
+    belts: strOrList, chain_jewellery: strOrList, sunglasses: strOrList, bags: strOrList, socks: strOrList,
+  }),
+  footwear: z.array(z.object({ type: s, colour: s, use: s })),
+  fragrance: z.array(z.object({ occasion: s, name: s, notes: strOrList, price_band: s, how_to_wear: s })),
+  wardrobe_essentials: z.object({ buy: z.array(z.object({ item: s, qty: z.coerce.number(), priority: z.union([s, z.number()]) })), retire: strs }),
+  tailoring_tips: strs,
+  plan_90_days: z.array(z.object({ week: z.coerce.number(), focus: s, tasks: strs })).length(12),
+  daily_routine: z.object({ morning: strs, night: strs }),
+});
+export type StylistOutput = z.infer<typeof StylistSchema>;
