@@ -92,7 +92,7 @@ export async function executeStep(admin: Admin, stepId: string) {
     if (retryable && step.attempt < MAX_ATTEMPTS) {
       await admin.from("pipeline_steps").update({
         status: "pending", error: msg, attempt: step.attempt + 1,
-        next_attempt_at: new Date(Date.now() + BACKOFF_MS[step.attempt - 1]).toISOString(),
+        next_attempt_at: new Date(Date.now() + (BACKOFF_MS[step.attempt - 1] ?? 600_000)).toISOString(),
       }).eq("id", stepId);
       return { retry: true };
     }
@@ -252,8 +252,8 @@ const AGENTS: Record<StepKey, (ctx: Ctx) => Promise<AgentResult>> = {
 
   async renders(ctx) {
     const outfits: any[] = ctx.outputs.stylist?.outfits ?? [];
-    const n = Math.max(0, Math.min(16, Number(ctx.settings.renders_per_report ?? 4) || 0));
-    const setting = String(ctx.settings.image_model ?? "");
+    const n = Math.max(0, Math.min(16, Number(ctx.settings["renders_per_report"] ?? 4) || 0));
+    const setting = String(ctx.settings["image_model"] ?? "");
     const model = setting.startsWith("openai/gpt-image") ? setting : DEFAULT_IMAGE_MODEL;
     const apiKey = process.env["LOVABLE_API_KEY"];
     if (!apiKey) throw new StepError("AI is not configured", false);

@@ -29,7 +29,7 @@ export const getOrderProgress = createServerFn({ method: "POST" })
     let eta = 0;
     const lines = LINES.map((l) => {
       const ss = l.steps.map((k) => st[k]);
-      l.steps.forEach((k, i) => { if (st[k] !== "succeeded" && st[k] !== "skipped") eta += l.secs[i]; });
+      l.steps.forEach((k, i) => { if (st[k] !== "succeeded" && st[k] !== "skipped") eta += l.secs[i] ?? 0; });
       const state = ss.every((s) => s === "succeeded" || s === "skipped") ? "done" : ss.some((s) => s === "running" || s === "succeeded") ? "active" : "pending";
       return { label: l.label, state };
     });
@@ -65,7 +65,8 @@ export const approveReview = createServerFn({ method: "POST" })
     await requireStaff(context);
     const { supabaseAdmin: admin } = await import("@/integrations/supabase/client.server");
     const { resumeAfterApproval } = await import("./pipeline.server");
-    const { data: task } = await admin.from("review_tasks").select("id, order_id").eq("id", data.taskId).single();
+    const { data: task } = await admin.from("review_tasks").select("id, order_id").eq("id", data.taskId).maybeSingle();
+    if (!task) throw new Error("Task not found");
     const { data: run } = await admin.from("pipeline_runs").select("id").eq("order_id", task.order_id).eq("status", "waiting_review").maybeSingle();
     if (!run) throw new Error("This report isn't waiting for approval. Failed runs need a manual fix.");
     await resumeAfterApproval(admin, run.id, context.userId);

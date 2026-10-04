@@ -37,7 +37,7 @@ function Page() {
             <Card key={t.id} className="space-y-3 p-5">
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <Link to="/admin/orders/$id" params={{ id: t.order_id }} className="font-mono text-xs text-gold">{t.order_id.slice(0, 8)}</Link>
-                <StatusBadge status={t.runStatus ?? t.status} tone={t.runStatus === "failed" ? "error" : "warning" as any} />
+                <StatusBadge status={t.runStatus ?? t.status} />
               </div>
               <p className="text-sm text-foreground">{t.reason}</p>
               {t.notes && <p className="break-words text-xs text-muted-foreground">{t.notes}</p>}
