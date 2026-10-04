@@ -76,6 +76,8 @@ export type Database = {
           address: string
           created_at: string
           email: string | null
+          grievance_officer_email: string | null
+          grievance_officer_name: string | null
           gstin: string
           id: number
           legal_name: string
@@ -89,6 +91,8 @@ export type Database = {
           address?: string
           created_at?: string
           email?: string | null
+          grievance_officer_email?: string | null
+          grievance_officer_name?: string | null
           gstin?: string
           id?: number
           legal_name?: string
@@ -102,6 +106,8 @@ export type Database = {
           address?: string
           created_at?: string
           email?: string | null
+          grievance_officer_email?: string | null
+          grievance_officer_name?: string | null
           gstin?: string
           id?: number
           legal_name?: string
@@ -313,6 +319,7 @@ export type Database = {
           product: Database["public"]["Enums"]["product_type"]
           razorpay_order_id: string | null
           razorpay_payment_id: string | null
+          refunded_paise: number
           reminder_sent_at: string | null
           status: Database["public"]["Enums"]["order_status"]
           total_paise: number
@@ -336,6 +343,7 @@ export type Database = {
           product?: Database["public"]["Enums"]["product_type"]
           razorpay_order_id?: string | null
           razorpay_payment_id?: string | null
+          refunded_paise?: number
           reminder_sent_at?: string | null
           status?: Database["public"]["Enums"]["order_status"]
           total_paise: number
@@ -359,11 +367,30 @@ export type Database = {
           product?: Database["public"]["Enums"]["product_type"]
           razorpay_order_id?: string | null
           razorpay_payment_id?: string | null
+          refunded_paise?: number
           reminder_sent_at?: string | null
           status?: Database["public"]["Enums"]["order_status"]
           total_paise?: number
           updated_at?: string
           user_id?: string
+        }
+        Relationships: []
+      }
+      page_views: {
+        Row: {
+          created_at: string
+          id: string
+          path: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          path: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          path?: string
         }
         Relationships: []
       }
@@ -727,6 +754,30 @@ export type Database = {
         }
         Relationships: []
       }
+      prompt_versions: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          id: string
+          key: string
+          value: Json
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          key: string
+          value: Json
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          key?: string
+          value?: Json
+        }
+        Relationships: []
+      }
       renders: {
         Row: {
           approved: boolean
@@ -1084,6 +1135,44 @@ export type Database = {
             columns: ["order_id"]
             isOneToOne: false
             referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ticket_messages: {
+        Row: {
+          author_id: string | null
+          body: string
+          channel: string
+          created_at: string
+          delivery_status: string | null
+          id: string
+          ticket_id: string
+        }
+        Insert: {
+          author_id?: string | null
+          body: string
+          channel?: string
+          created_at?: string
+          delivery_status?: string | null
+          id?: string
+          ticket_id: string
+        }
+        Update: {
+          author_id?: string | null
+          body?: string
+          channel?: string
+          created_at?: string
+          delivery_status?: string | null
+          id?: string
+          ticket_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ticket_messages_ticket_id_fkey"
+            columns: ["ticket_id"]
+            isOneToOne: false
+            referencedRelation: "tickets"
             referencedColumns: ["id"]
           },
         ]

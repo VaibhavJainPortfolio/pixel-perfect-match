@@ -78,6 +78,13 @@
       "when": 1791131816111,
       "tag": "0010_support_tickets",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1791133385292,
+      "tag": "0011_admin_panel",
+      "breakpoints": true
     }
   ]
 }
