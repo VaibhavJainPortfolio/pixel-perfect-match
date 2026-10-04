@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { SITE } from "@/lib/site";
 import { Link } from "@tanstack/react-router";
 import { cn } from "@/lib/utils";
 import { useSession } from "@/hooks/use-auth";

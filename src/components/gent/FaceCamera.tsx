@@ -53,7 +53,7 @@ export function FaceCamera({ onResult }: { onResult: (shape: FaceShape) => void 
               pctx?.drawImage(v, 0, 0, 32, 32);
               const d = pctx?.getImageData(0, 0, 32, 32).data;
               let sum = 0;
-              if (d) for (let i = 0; i < d.length; i += 4) sum += 0.299 * d[i] + 0.587 * d[i + 1] + 0.114 * d[i + 2];
+              if (d) for (let i = 0; i < d.length; i += 4) sum += 0.299 * d[i]! + 0.587 * d[i + 1]! + 0.114 * d[i + 2]!;
               const brightness = d ? sum / (d.length / 4) : 128;
               const g = guide(lm, brightness);
               setMessage(g.message);

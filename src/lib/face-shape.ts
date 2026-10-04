@@ -16,7 +16,7 @@ export type Measurements = { forehead: number; cheek: number; jaw: number; lengt
 
 /** Landmarks are normalised; pass the frame size so ratios are in real pixels. */
 export function measure(lm: Pt[], w: number, h: number): Measurements {
-  const p = (i: number) => ({ x: lm[i].x * w, y: lm[i].y * h });
+  const p = (i: number) => ({ x: lm[i]!.x * w, y: lm[i]!.y * h });
   return {
     forehead: dist(p(L.foreheadL), p(L.foreheadR)),
     cheek: dist(p(L.cheekL), p(L.cheekR)),
@@ -42,11 +42,11 @@ export type Guidance = { ok: boolean; message: string };
 
 /** Live positioning hints. Coordinates are normalised (0..1). */
 export function guide(lm: Pt[], brightness: number): Guidance {
-  const xs = [L.cheekL, L.cheekR].map((i) => lm[i].x);
+  const xs = [L.cheekL, L.cheekR].map((i) => lm[i]!.x);
   const faceW = Math.abs(xs[1] - xs[0]);
-  const cx = (lm[L.cheekL].x + lm[L.cheekR].x) / 2;
-  const cy = (lm[L.top].y + lm[L.chin].y) / 2;
-  const yaw = Math.abs(lm[L.nose].x - cx) / faceW;
+  const cx = (lm[L.cheekL]!.x + lm[L.cheekR]!.x) / 2;
+  const cy = (lm[L.top]!.y + lm[L.chin]!.y) / 2;
+  const yaw = Math.abs(lm[L.nose]!.x - cx) / faceW;
   if (brightness < 70) return { ok: false, message: "More light, please — face a window" };
   if (faceW < 0.32) return { ok: false, message: "Move closer" };
   if (faceW > 0.7) return { ok: false, message: "Move back a little" };
