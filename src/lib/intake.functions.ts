@@ -41,6 +41,8 @@ export const saveBasics = createServerFn({ method: "POST" })
     weight_kg: z.number().min(35).max(250),
     budget_band: z.enum(["under_3000", "3000_7000", "7000_15000", "15000_plus"]),
     main_fix: z.string().trim().max(140).optional().default(""),
+    wears_glasses: z.enum(["no", "sometimes", "always"]),
+    wants_sunglasses: z.boolean().default(true),
     consent: z.literal(true),
     user_agent: z.string().max(400).optional(),
   }).parse(d))
@@ -48,7 +50,7 @@ export const saveBasics = createServerFn({ method: "POST" })
     const { supabaseAdmin: admin } = await import("@/integrations/supabase/client.server");
     const { order, submission } = await ownedOrder(admin, data.orderId, context.userId);
     if (!OPEN_STATUSES.includes(order.status)) throw new Error("This order can't be edited now.");
-    const basics = { full_name: data.full_name, age: data.age, city: data.city, height_cm: data.height_cm, weight_kg: data.weight_kg, budget_band: data.budget_band, main_fix: data.main_fix };
+    const basics = { full_name: data.full_name, age: data.age, city: data.city, height_cm: data.height_cm, weight_kg: data.weight_kg, budget_band: data.budget_band, main_fix: data.main_fix, wears_glasses: data.wears_glasses, wants_sunglasses: data.wants_sunglasses };
     if (submission) await admin.from("submissions").update({ basics, status: "photos_pending" }).eq("id", submission.id);
     else await admin.from("submissions").insert({ order_id: order.id, user_id: context.userId, basics, status: "photos_pending" });
     await admin.from("profiles").update({ full_name: data.full_name, age: data.age, city: data.city, height_cm: data.height_cm, weight_kg: data.weight_kg, budget_band: data.budget_band }).eq("id", context.userId);

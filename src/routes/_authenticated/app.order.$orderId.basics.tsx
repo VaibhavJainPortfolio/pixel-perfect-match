@@ -41,6 +41,8 @@ function Page() {
   const [weight, setWeight] = useState("");
   const [budget, setBudget] = useState<Budget | null>(null);
   const [fix, setFix] = useState("");
+  const [glasses, setGlasses] = useState<"no" | "sometimes" | "always" | null>(null);
+  const [sun, setSun] = useState(true);
   const [consent, setConsent] = useState(false);
   const [busy, setBusy] = useState(false);
 
@@ -54,6 +56,8 @@ function Page() {
       const w = b.weight_kg ?? p.weight_kg; if (w) setWeight(String(w));
       if (b.budget_band ?? p.budget_band) setBudget((b.budget_band ?? p.budget_band) as Budget);
       if (b.main_fix) setFix(b.main_fix);
+      if (b.wears_glasses) setGlasses(b.wears_glasses);
+      if (typeof b.wants_sunglasses === "boolean") setSun(b.wants_sunglasses);
     }).catch((e) => toast.error(e.message));
   }, [orderId]);
 
@@ -62,12 +66,13 @@ function Page() {
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!budget) { toast.error("Pick a monthly budget."); return; }
+    if (!glasses) { toast.error("Tell us if you wear glasses."); return; }
     if (!(heightCm >= 120 && heightCm <= 230)) { toast.error("Please check your height."); return; }
     setBusy(true);
     try {
       await saveFn({ data: {
         orderId, full_name: name, age: Number(age), city, height_cm: Math.round(heightCm * 10) / 10,
-        weight_kg: Number(weight), budget_band: budget, main_fix: fix, consent: true, user_agent: navigator.userAgent,
+        weight_kg: Number(weight), budget_band: budget, main_fix: fix, wears_glasses: glasses, wants_sunglasses: sun, consent: true, user_agent: navigator.userAgent,
       } });
       navigate({ to: "/app/order/$orderId/photos", params: { orderId } });
     } catch (err: any) {
@@ -114,6 +119,10 @@ function Page() {
               ))}
             </div>
           </div>
+          <Chips label="Do you wear glasses?" value={glasses} onChange={setGlasses}
+            options={[["no", "No"], ["sometimes", "Sometimes"], ["always", "Always"]] as const} />
+          <Chips label="Do you want sunglasses suggestions? (optional)" value={sun ? "yes" : "no"} onChange={(v) => setSun(v === "yes")}
+            options={[["yes", "Yes"], ["no", "No"]] as const} />
           <F label="Main thing to fix (optional)"><Input maxLength={140} placeholder="e.g. look sharper at work" value={fix} onChange={(e) => setFix(e.target.value)} /></F>
           <div className="flex items-start gap-3">
             <Checkbox id="photo-consent" checked={consent} onCheckedChange={(v) => setConsent(v === true)} className="mt-0.5" />
@@ -128,4 +137,18 @@ function Page() {
 
 function F({ label, children }: { label: string; children: React.ReactNode }) {
   return <div className="space-y-2"><Label>{label}</Label>{children}</div>;
+}
+
+function Chips<T extends string>({ label, value, onChange, options }: { label: string; value: T | null; onChange: (v: T) => void; options: readonly (readonly [T, string])[] }) {
+  return (
+    <div className="space-y-2">
+      <Label>{label}</Label>
+      <div className="flex flex-wrap gap-2">
+        {options.map(([k, l]) => (
+          <button type="button" key={k} onClick={() => onChange(k)}
+            className={cn("rounded-full border px-4 py-2 text-sm", value === k ? "border-gold bg-gold-soft text-gold" : "border-border text-muted-foreground")}>{l}</button>
+        ))}
+      </div>
+    </div>
+  );
 }
