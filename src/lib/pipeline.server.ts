@@ -4,6 +4,7 @@
 import { createOpenAI } from "@ai-sdk/openai";
 import { streamText } from "ai";
 import { resolveModel } from "./photo-check.server";
+import * as A from "./analysis-agents.server";
 
 type Admin = any;
 const GATEWAY = "https://ai.gateway.lovable.dev/v1";
@@ -195,6 +196,17 @@ async function rules(ctx: Ctx, category: string) {
   return data ?? [];
 }
 
+async function claude(ctx: Ctx, promptKey: string, schema: any, input: unknown, slots: string[]): Promise<AgentResult> {
+  const system = ctx.settings[promptKey];
+  if (typeof system !== "string" || !system.trim()) throw new StepError(`Missing prompt ${promptKey} in AI settings`, false);
+  try {
+    return await A.runClaudeAgent({ model: A.resolveClaudeModel(ctx.settings["analysis_model"]), system, schema, input, imageUrls: await Promise.all(slots.map((sl) => ctx.photoUrl(sl))) });
+  } catch (e: any) {
+    if (e instanceof A.AgentError) throw new StepError(e.message, e.retryable);
+    throw e;
+  }
+}
+
 // ---------- agents ----------
 
 const AGENTS: Record<StepKey, (ctx: Ctx) => Promise<AgentResult>> = {
@@ -232,7 +244,7 @@ const AGENTS: Record<StepKey, (ctx: Ctx) => Promise<AgentResult>> = {
     return aiJson(ctx, {
       modelKey: "analysis_model", promptKey: "prompt_eyewear",
       defaultPrompt: `You recommend eyewear and sunglasses for men. Based on face shape analysis and skin palette, JSON: {"frames": [{"style": string, "why": string}] (3), "frame_colours": string[], "sunglasses": [{"style": string, "why": string}] (2), "avoid": string[]}.`,
-      input: { face: ctx.outputs.face_hair, skin: { undertone: ctx.outputs.skin?.undertone, metals: ctx.outputs.skin?.metals, palette: ctx.outputs.skin?.palette } },
+      input: { face: ctx.outputs.face_hair, skin: { undertone: ctx.outputs.skin?.undertone, metals: ctx.outputs.skin?.metals, power_colours: ctx.outputs.skin?.power_colours } },
     });
   },
 
@@ -325,9 +337,9 @@ const AGENTS: Record<StepKey, (ctx: Ctx) => Promise<AgentResult>> = {
     const esc = (s: unknown) => String(s ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]!));
     const html = `<!doctype html><html><head><meta charset="utf-8"><style>body{font-family:Georgia,serif;color:#121726;padding:32px}h1,h2{color:#121726}h2{border-bottom:2px solid #D1AE6E;padding-bottom:4px;margin-top:28px}li{margin:4px 0}.sw{display:inline-block;width:28px;height:28px;border-radius:6px;margin:2px;border:1px solid #ccc}</style></head><body>
 <h1>${esc(d.name)}'s Style Report</h1><p>${esc(d.summary)}</p>
-<h2>Face & hair</h2><p>Face shape: <b>${esc(d.face_hair?.face_shape)}</b></p><ul>${(d.face_hair?.hairstyles ?? []).map((h: any) => `<li><b>${esc(h.name)}</b> — ${esc(h.why)}</li>`).join("")}</ul><p>Beard: ${esc(d.face_hair?.beard?.style)} — ${esc(d.face_hair?.beard?.why)}</p>
-<h2>Body & fit</h2><p>${esc(d.body?.body_type)}</p><ul>${(d.body?.fit_rules ?? []).map((r: any) => `<li>${esc(r)}</li>`).join("")}</ul>
-<h2>Your colours</h2><p>${esc(d.skin?.undertone)} undertone · ${esc(d.skin?.season)}</p><div>${(d.skin?.palette?.best ?? []).map((c: any) => `<span class="sw" style="background:${esc(c.hex)}"></span>`).join("")}</div>
+<h2>Face & hair</h2><p>Face shape: <b>${esc(d.face_hair?.face_shape)}</b></p><ul>${[d.face_hair?.recommended_haircut].filter(Boolean).map((h: any) => `<li><b>${esc(h.name)}</b> — ${esc(h.why)}</li>`).join("")}</ul><p>Beard: ${esc(d.face_hair?.recommended_beard?.style)} — ${esc(d.face_hair?.recommended_beard?.why)}</p>
+<h2>Body & fit</h2><p>${esc(d.body?.body_type)}</p><ul>${(d.body?.fit_rules ?? []).map((r: any) => `<li>${esc(r.rule ?? r)} — ${esc(r.why)}</li>`).join("")}</ul>
+<h2>Your colours</h2><p>${esc(d.skin?.undertone)} undertone · ${esc(d.skin?.season)}</p><div>${(d.skin?.power_colours ?? []).map((c: any) => `<span class="sw" style="background:${esc(c.hex)}"></span>`).join("")}</div>
 <h2>Eyewear</h2><ul>${(d.eyewear?.frames ?? []).map((f: any) => `<li>${esc(f.style)} — ${esc(f.why)}</li>`).join("")}</ul>
 <h2>16 outfits</h2><ol>${(d.outfits ?? []).map((o: any) => `<li><b>${esc(o.name)}</b> (${esc(o.occasion)}): ${esc((o.pieces ?? []).join(", "))}</li>`).join("")}</ol>
 <h2>Accessories, watches & fragrance</h2><ul>${[...(d.accessories ?? []).map((a: any) => a.item), ...(d.watches ?? []).map((w: any) => w.style), ...(d.fragrance ?? []).map((f: any) => f.name)].map((x) => `<li>${esc(x)}</li>`).join("")}</ul>
