@@ -85,9 +85,9 @@ export function CrudTable({ table, fields, orderBy, defaults, csvHint }: {
     if (!edit) return;
     let rec; try { rec = toRecord(edit, false); } catch (e: any) { toast.error(e.message); return; }
     setBusy(true);
-    const { error } = edit.id ? await db.update(rec).eq("id", edit.id) : await db.insert(rec);
+    const { error } = edit["id"] ? await db.update(rec).eq("id", edit["id"]) : await db.insert(rec);
     setBusy(false);
-    if (error) return toast.error(error.message);
+    if (error) { toast.error(error.message); return; }
     toast.success("Saved"); setEdit(null); load();
   };
 
@@ -99,12 +99,12 @@ export function CrudTable({ table, fields, orderBy, defaults, csvHint }: {
 
   const importCsv = async (file: File) => {
     const parsed = parseCsv(await file.text());
-    if (!parsed.length) return toast.error("The file has no rows.");
+    if (!parsed.length) { toast.error("The file has no rows."); return; }
     const inserts: any[] = [], updates: any[] = [], errors: string[] = [];
     parsed.forEach((r, i) => {
       try {
         const rec = toRecord({ ...defaults, ...r }, false);
-        if (r.id) updates.push({ id: r.id, rec: toRecord(r, true) }); else inserts.push(rec);
+        if (r["id"]) updates.push({ id: r["id"], rec: toRecord(r, true) }); else inserts.push(rec);
       } catch (e: any) { errors.push(`Row ${i + 2}: ${e.message}`); }
     });
     if (errors.length) { toast.error(`Nothing imported. ${errors.slice(0, 3).join(" · ")}${errors.length > 3 ? ` (+${errors.length - 3} more)` : ""}`); return; }
@@ -163,7 +163,7 @@ export function CrudTable({ table, fields, orderBy, defaults, csvHint }: {
 
       <Dialog open={!!edit} onOpenChange={(o) => !o && setEdit(null)}>
         <DialogContent className="max-h-[90vh] overflow-y-auto">
-          <DialogHeader><DialogTitle>{edit?.id ? "Edit" : "Add"}</DialogTitle></DialogHeader>
+          <DialogHeader><DialogTitle>{edit?.["id"] ? "Edit" : "Add"}</DialogTitle></DialogHeader>
           {edit && (
             <div className="space-y-3">
               {fields.map((f) => {
