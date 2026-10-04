@@ -151,3 +151,13 @@
   text-transform: uppercase;
   color: var(--color-gold);
 }
+
+/* Report print / PDF layout */
+@page { size: A4; margin: 14mm 10mm 16mm; }
+@media print {
+  * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .report-section { break-inside: auto; }
+  .break-before-page { break-before: page; }
+  .no-print { display: none !important; }
+  figure, li { break-inside: avoid; }
+}
