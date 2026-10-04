@@ -246,6 +246,11 @@ async function applyAutoFixes(ctx: Ctx, fixes: { path: string; new_value: unknow
   return applied;
 }
 
+async function appBaseUrl(admin: Admin) {
+  const { data } = await admin.from("internal_config").select("value").eq("key", "app_base_url").maybeSingle();
+  return String(data?.value ?? "").replace(/\/$/, "");
+}
+
 // ---------- agents ----------
 
 const AGENTS: Record<StepKey, (ctx: Ctx) => Promise<AgentResult>> = {
@@ -425,18 +430,37 @@ const AGENTS: Record<StepKey, (ctx: Ctx) => Promise<AgentResult>> = {
 
   async report_build(ctx) {
     const o = ctx.outputs;
+    const st = o.stylist ?? {};
+    const photos: Record<string, any> = {};
+    for (const p of ctx.photos) if (["face_front", "face_45", "body_front", "body_side", "outfit"].includes(p.slot) && p.quality_status === "passed")
+      photos[p.slot] = { path: p.storage_path, width: p.landmarks?.width ?? null, height: p.landmarks?.height ?? null, landmarks: p.landmarks ?? null };
+    const { data: approved } = await ctx.admin.from("renders").select("look_key, is_hero").eq("order_id", ctx.order.id).eq("status", "done").eq("approved", true);
+    const approvedKeys = (approved ?? []).map((r: any) => r.look_key);
+    const hero = (approved ?? []).find((r: any) => r.is_hero)?.look_key ?? approvedKeys.find((k: string) => k.startsWith("look_")) ?? null;
+    const outfit1 = st.outfits?.[0];
+    const { reportReference, randomToken } = await import("./report.server");
     const data = {
-      generated_at: new Date().toISOString(), name: ctx.basics.full_name, basics: ctx.basics,
-      face_hair: o.face_hair, body: o.body, skin: o.skin, eyewear: o.eyewear,
-      stylist: o.stylist, summary: o.stylist?.summary, outfits: o.stylist?.outfits, accessories: o.stylist?.accessories,
-      watches: o.stylist?.accessories?.watches, fragrance: o.stylist?.fragrance, plan_90_days: o.stylist?.plan_90_days,
-      renders: o.renders?.looks ?? [], hero_render: o.renders?.hero ?? null, eyewear_renders: o.renders?.eyewear ?? [], review: { score: o.review?.score },
+      schema_version: 2, generated_at: new Date().toISOString(), reference: reportReference(ctx.order.id),
+      name: ctx.basics.full_name, basics: ctx.basics,
+      face_hair: o.face_hair, body: o.body, skin: o.skin, eyewear: o.eyewear, stylist: st,
+      summary: st.summary, outfits: st.outfits, plan_90_days: st.plan_90_days,
+      photos, renders: approvedKeys.filter((k: string) => k.startsWith("look_")), eyewear_renders: approvedKeys.filter((k: string) => k.startsWith("eyewear_")),
+      hero_render: hero,
+      before_after: {
+        crosses: (o.body?.current_outfit_assessment?.change ?? []).slice(0, 3),
+        ticks: [outfit1?.why_it_works, ...(st.summary?.three_biggest_wins ?? []).map((w: any) => w.title)].filter(Boolean).slice(0, 3),
+      },
+      review: { score: o.review?.score },
     };
+    const token = randomToken();
+    const now = new Date().toISOString();
+    const expires = new Date(Date.now() + 30 * 86400_000).toISOString(); // print/PDF link; owner shares mint fresh 7-day tokens
     const { data: existing } = await ctx.admin.from("reports").select("id, version").eq("order_id", ctx.order.id).maybeSingle();
     let id = existing?.id;
-    if (existing) await ctx.admin.from("reports").update({ data, version: (existing.version ?? 1) + 1 }).eq("id", existing.id);
+    const patch = { data, share_token: token, share_expires_at: expires, published_at: now };
+    if (existing) await ctx.admin.from("reports").update({ ...patch, version: (existing.version ?? 1) + 1 }).eq("id", existing.id);
     else {
-      const { data: row, error } = await ctx.admin.from("reports").insert({ order_id: ctx.order.id, user_id: ctx.order.user_id, data }).select("id").single();
+      const { data: row, error } = await ctx.admin.from("reports").insert({ order_id: ctx.order.id, user_id: ctx.order.user_id, ...patch }).select("id").single();
       if (error) throw new StepError(error.message);
       id = row.id;
     }
@@ -447,22 +471,19 @@ const AGENTS: Record<StepKey, (ctx: Ctx) => Promise<AgentResult>> = {
     const key = process.env["PDFSHIFT_API_KEY"];
     const reportId = ctx.outputs.report_build?.report_id;
     if (!key) return { output: { skipped: true, reason: "PDF service not set up" } };
-    const { data: rep } = await ctx.admin.from("reports").select("data").eq("id", reportId).single();
+    const { data: rep } = await ctx.admin.from("reports").select("share_token, data").eq("id", reportId).single();
+    const base = await appBaseUrl(ctx.admin);
     const d: any = rep.data ?? {};
     const esc = (s: unknown) => String(s ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]!));
-    const html = `<!doctype html><html><head><meta charset="utf-8"><style>body{font-family:Georgia,serif;color:#121726;padding:32px}h1,h2{color:#121726}h2{border-bottom:2px solid #D1AE6E;padding-bottom:4px;margin-top:28px}li{margin:4px 0}.sw{display:inline-block;width:28px;height:28px;border-radius:6px;margin:2px;border:1px solid #ccc}</style></head><body>
-<h1>${esc(d.name)}'s Style Report</h1><p><b>${esc(d.summary?.headline ?? d.summary)}</b></p><ul>${(d.summary?.three_biggest_wins ?? []).map((w: any) => `<li><b>${esc(w.title)}</b> — ${esc(w.detail)}</li>`).join("")}</ul>
-<h2>Face & hair</h2><p>Face shape: <b>${esc(d.face_hair?.face_shape)}</b></p><ul>${[d.face_hair?.recommended_haircut].filter(Boolean).map((h: any) => `<li><b>${esc(h.name)}</b> — ${esc(h.why)}</li>`).join("")}</ul><p>Beard: ${esc(d.face_hair?.recommended_beard?.style)} — ${esc(d.face_hair?.recommended_beard?.why)}</p>
-<h2>Body & fit</h2><p>${esc(d.body?.body_type)}</p><ul>${(d.body?.fit_rules ?? []).map((r: any) => `<li>${esc(r.rule ?? r)} — ${esc(r.why)}</li>`).join("")}</ul>
-<h2>Your colours</h2><p>${esc(d.skin?.undertone)} undertone · ${esc(d.skin?.season)}</p><div>${(d.skin?.power_colours ?? []).map((c: any) => `<span class="sw" style="background:${esc(c.hex)}"></span>`).join("")}</div>
-<h2>Eyewear</h2><p>Size guide: <b>${esc(d.eyewear?.size_guide?.label)}</b> — ${esc(d.eyewear?.size_guide?.how_to_read_it)}</p><h3>Frames</h3><ul>${(d.eyewear?.prescription_frames ?? []).map((f: any) => `<li><span class="sw" style="width:14px;height:14px;background:${esc(f.colour_hex)}"></span> <b>${esc(f.shape)}</b> (${esc(f.rim)}, ${esc(f.colour_name)}) — ${esc(f.why_it_works)}</li>`).join("")}</ul>${(d.eyewear?.sunglasses ?? []).length ? `<h3>Sunglasses</h3><ul>${d.eyewear.sunglasses.map((g: any) => `<li><b>${esc(g.style)}</b> (${esc(g.frame_colour_name)}, ${esc(g.lens)}) — ${esc(g.why_it_works)}</li>`).join("")}</ul>` : ""}<h3>Avoid</h3><ul>${(d.eyewear?.avoid ?? []).map((a: any) => `<li>${esc(a.style)} — ${esc(a.why)}</li>`).join("")}</ul>
-<h2>16 outfits</h2><ol>${(d.outfits ?? []).map((o: any) => `<li><b>${esc(o.name)}</b> (${esc(o.occasion)}): ${esc((o.items ?? []).map((i: any) => i.description).join(", "))}</li>`).join("")}</ol>
-<h2>Accessories, watches & fragrance</h2><ul>${[...(d.watches ?? []).map((w: any) => `${w.model_suggestion} (${w.use_case})`), ...(d.fragrance ?? []).map((f: any) => `${f.name} — ${f.occasion}`)].map((x) => `<li>${esc(x)}</li>`).join("")}</ul>
-<h2>Your 90-day plan</h2>${(d.plan_90_days ?? []).map((p: any) => `<p><b>Week ${esc(p.week)} — ${esc(p.focus)}</b></p><ul>${(p.tasks ?? []).map((a: any) => `<li>${esc(a)}</li>`).join("")}</ul>`).join("")}
-</body></html>`;
+    const band = `font-family:Arial,sans-serif;font-size:9px;color:#9BA1B5;width:100%;padding:0 10mm;display:flex;justify-content:space-between`;
     const res = await fetch("https://api.pdfshift.io/v3/convert/pdf", {
       method: "POST", headers: { "content-type": "application/json", "X-API-Key": key },
-      body: JSON.stringify({ source: html, format: "A4" }),
+      body: JSON.stringify({
+        source: `${base}/print/report/${reportId}?token=${rep.share_token}`,
+        format: "A4", use_print: true, delay: 3000, margin: { top: "16mm", bottom: "16mm", left: "0mm", right: "0mm" },
+        header: { source: `<div style="${band}"><span>TheGent's Style Report · ${esc(d.name)}</span><span>Ref ${esc(d.reference)}</span></div>`, height: "12mm" },
+        footer: { source: `<div style="${band}"><span>AI renders are approximate likenesses</span><span>Page {{page}} of {{total}}</span></div>`, height: "12mm" },
+      }),
     });
     if (!res.ok) throw new StepError("PDF conversion failed: " + (await res.text()).slice(0, 200), res.status === 429 || res.status >= 500);
     const path = `${ctx.order.user_id}/${ctx.order.id}/style-report.pdf`;
@@ -473,17 +494,42 @@ const AGENTS: Record<StepKey, (ctx: Ctx) => Promise<AgentResult>> = {
   },
 
   async delivery(ctx) {
+    const D = await import("./delivery.server");
     const reportId = ctx.outputs.report_build?.report_id;
     const now = new Date().toISOString();
-    await ctx.admin.from("reports").update({ published_at: now }).eq("id", reportId);
+    const { data: rep } = await ctx.admin.from("reports").select("pdf_path, data, published_at").eq("id", reportId).single();
     const { data: p } = await ctx.admin.from("profiles").select("full_name, phone, email, whatsapp_opt_in").eq("id", ctx.order.user_id).maybeSingle();
-    const payload = { name: p?.full_name, report_id: reportId, pdf: !!ctx.outputs.pdf?.pdf_path };
-    const rows: any[] = [];
-    if (p?.whatsapp_opt_in && p.phone) rows.push({ user_id: ctx.order.user_id, order_id: ctx.order.id, channel: "whatsapp", template: "report_ready", status: "queued", payload: { ...payload, phone: p.phone } });
-    if (p?.email) rows.push({ user_id: ctx.order.user_id, order_id: ctx.order.id, channel: "email", template: "report_ready", status: "queued", payload: { ...payload, email: p.email } });
-    if (rows.length) await ctx.admin.from("notifications").insert(rows);
-    await ctx.admin.from("orders").update({ status: "delivered" }).eq("id", ctx.order.id);
+    const { data: ord } = await ctx.admin.from("orders").select("invoice_url").eq("id", ctx.order.id).single();
+    const base = await appBaseUrl(ctx.admin);
+    const reportUrl = `${base}/app/report/${reportId}`;
+    const signed = async (bucket: string, path?: string | null) => path ? (await ctx.admin.storage.from(bucket).createSignedUrl(path, 7 * 86400)).data?.signedUrl ?? null : null;
+    const pdfUrl = await signed("reports", rep.pdf_path);
+    const invoiceUrl = ord?.invoice_url ? (ord.invoice_url.startsWith("http") ? ord.invoice_url : await signed("invoices", ord.invoice_url)) : null;
+    const name = (p?.full_name ?? (rep.data as any)?.name ?? "").split(" ")[0];
+    const log = (channel: "whatsapp" | "email", r: { status: string; detail?: string; providerId?: string }, extra: object) =>
+      ctx.admin.from("notifications").insert({ user_id: ctx.order.user_id, order_id: ctx.order.id, channel, template: "report_ready", status: r.status,
+        sent_at: r.status === "sent" ? new Date().toISOString() : null, payload: { report_id: reportId, ...extra, detail: r.detail ?? null, provider_id: r.providerId ?? null } });
+
+    let wa: { status: string; detail?: string } = { status: "skipped", detail: "Not opted in or no phone" };
+    if (p?.whatsapp_opt_in && p.phone) {
+      wa = await D.sendWhatsApp({ provider: String(ctx.settings["whatsapp_provider"] ?? "meta"), phone: p.phone, name, pdfUrl, reportId,
+        template: String(ctx.settings["whatsapp_template_report"] ?? "report_ready"), language: String(ctx.settings["whatsapp_template_language"] ?? "en") });
+      await log("whatsapp", wa, { phone: p.phone });
+    }
+    let em: { status: string; detail?: string } = { status: "skipped", detail: "No email on profile" };
+    if (p?.email) {
+      let pdf: Uint8Array | null = null;
+      if (rep.pdf_path) { const { data: blob } = await ctx.admin.storage.from("reports").download(rep.pdf_path); if (blob) pdf = new Uint8Array(await blob.arrayBuffer()); }
+      em = await D.sendReportEmail({ to: p.email, from: String(ctx.settings["email_from"] ?? "TheGent's <reports@thegent.in>"), name, reportUrl, invoiceUrl, pdf, reference: (rep.data as any)?.reference ?? "" });
+      await log("email", em, { email: p.email });
+    }
+    // The web report is live either way; anything that didn't reach him goes to support.
+    const problems = [wa.status === "failed" && `WhatsApp failed: ${wa.detail}`, em.status !== "sent" && `Email ${em.status}: ${em.detail}`].filter(Boolean) as string[];
+    const needsSupport = wa.status === "failed" || em.status !== "sent";
+    await ctx.admin.from("reports").update({ published_at: rep.published_at ?? now }).eq("id", reportId);
+    await ctx.admin.from("orders").update({ status: "delivered", delivered_at: now, needs_support: needsSupport }).eq("id", ctx.order.id);
+    if (needsSupport) await ctx.admin.from("review_tasks").insert({ order_id: ctx.order.id, reason: "Delivery needs attention", notes: problems.join("\n") });
     await ctx.admin.from("pipeline_runs").update({ status: "completed", finished_at: now }).eq("id", ctx.run.id);
-    return { output: { delivered_at: now, notified: rows.map((r) => r.channel) } };
+    return { output: { delivered_at: now, whatsapp: wa, email: em, needs_support: needsSupport } };
   },
 };
