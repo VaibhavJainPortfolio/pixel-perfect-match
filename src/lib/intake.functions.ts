@@ -109,6 +109,7 @@ export const submitForAnalysis = createServerFn({ method: "POST" })
     await admin.from("submissions").update({ status: "submitted" }).eq("id", submission.id);
     await admin.from("orders").update({ status: "processing" }).eq("id", order.id);
     await admin.from("audit_log").insert({ actor_id: context.userId, action: "submission_submitted", entity: "order", entity_id: order.id });
-    // start-pipeline hook: built in the next step
+    const { startPipeline } = await import("./pipeline.server");
+    await startPipeline(admin, order.id);
     return { ok: true };
   });

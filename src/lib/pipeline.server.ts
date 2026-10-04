@@ -210,7 +210,7 @@ const AGENTS: Record<StepKey, (ctx: Ctx) => Promise<AgentResult>> = {
     return aiJson(ctx, {
       modelKey: "analysis_model", promptKey: "prompt_face_hair",
       defaultPrompt: `You are an expert men's grooming analyst for Indian men. Using the photos and browser face measurements, determine face shape and recommend hair and beard. JSON: {"face_shape": "oval|round|square|oblong|heart|diamond|triangle", "confidence": 0-1, "features": string[], "hairstyles": [{"name": string, "why": string, "ask_barber": string}] (3 items), "hair_avoid": string[], "beard": {"style": string, "why": string, "maintenance": string}, "beard_avoid": string[]}. Respect the house rules provided.`,
-      input: { measurements: ctx.outputs.measurements?.slots?.face_front, age: ctx.basics.age, rules: await rules(ctx, "face_hair" as any).catch(() => []) },
+      input: { measurements: ctx.outputs.measurements?.slots?.face_front, age: ctx.basics.age, rules: [...await rules(ctx, "face_shape"), ...await rules(ctx, "hair"), ...await rules(ctx, "beard")] },
       images: [await ctx.photoUrl("face_front"), await ctx.photoUrl("face_left"), await ctx.photoUrl("face_45")],
     });
   },
