@@ -241,11 +241,20 @@ const AGENTS: Record<StepKey, (ctx: Ctx) => Promise<AgentResult>> = {
   },
 
   async eyewear(ctx) {
-    return aiJson(ctx, {
-      modelKey: "analysis_model", promptKey: "prompt_eyewear",
-      defaultPrompt: `You recommend eyewear and sunglasses for men. Based on face shape analysis and skin palette, JSON: {"frames": [{"style": string, "why": string}] (3), "frame_colours": string[], "sunglasses": [{"style": string, "why": string}] (2), "avoid": string[]}.`,
-      input: { face: ctx.outputs.face_hair, skin: { undertone: ctx.outputs.skin?.undertone, metals: ctx.outputs.skin?.metals, power_colours: ctx.outputs.skin?.power_colours } },
-    });
+    const fh = ctx.outputs.face_hair ?? {}, sk = ctx.outputs.skin ?? {};
+    const { data: catalog } = await ctx.admin.from("products_catalog")
+      .select("id, category, brand, name, shape, rim, lens_width_mm, bridge_mm, temple_mm, colour, colour_hex, price_min, price_max")
+      .in("category", ["eyewear_frames", "sunglasses"]).eq("active", true).limit(80);
+    const r = await claude(ctx, "prompt_eyewear", A.EyewearSchema, {
+      basics: { age: ctx.basics.age, profession: ctx.basics.profession ?? ctx.basics.main_fix ?? null, wears_glasses: ctx.basics.wears_glasses ?? "no", wants_sunglasses: ctx.basics.wants_sunglasses !== false },
+      eyewear_mm: ctx.outputs.measurements?.slots?.face_front?.eyewear_mm ?? null,
+      face_hair: { face_shape: fh.face_shape, hairline: fh.hair?.hairline, beard: fh.recommended_beard?.style ?? fh.beard?.current_state, features: fh.features },
+      skin: { undertone: sk.undertone, season: sk.season, metals: sk.metals, power_colours: sk.power_colours },
+      catalog: catalog ?? [],
+      catalog_note: "If a catalog item fits a recommendation, set product_id to its id.",
+    }, ["face_front", "face_45"]);
+    if (ctx.basics.wants_sunglasses === false) r.output.sunglasses = [];
+    return r;
   },
 
   async stylist(ctx) {
@@ -293,7 +302,36 @@ const AGENTS: Record<StepKey, (ctx: Ctx) => Promise<AgentResult>> = {
       await ctx.admin.from("renders").upsert({ order_id: ctx.order.id, run_id: ctx.run.id, look_key: key, prompt, storage_path: path, provider: "lovable", model, status: "done", approved: true }, { onConflict: "order_id,look_key" });
       done.push(key);
     }
-    return { output: { count: done.length, looks: done }, model };
+    // Two extra head-and-shoulders eyewear renders (not counted in renders_per_report)
+    const ew = ctx.outputs.eyewear ?? {}, fh = ctx.outputs.face_hair ?? {};
+    const tpl = String(ctx.settings["prompt_render_eyewear"] ?? "Photorealistic head-and-shoulders portrait of the same man in the reference photo. Keep his exact face, skin tone, hair and beard: {haircut}, {beard}. He is wearing {frame_description} in {colour}, correctly sized for his face. Neutral background, soft daylight, no text, no logos.");
+    const pf = (ew.prescription_frames ?? []).find((x: any) => x.rank === 1) ?? ew.prescription_frames?.[0];
+    const sg = (ew.sunglasses ?? []).find((x: any) => x.rank === 1) ?? ew.sunglasses?.[0];
+    const jobs = [
+      pf && { key: "eyewear_frames", desc: `${pf.rim} ${pf.shape} ${pf.material} prescription glasses with clear lenses`, colour: pf.colour_name },
+      sg && { key: "eyewear_sunglasses", desc: `${sg.style} sunglasses with ${sg.lens} lenses`, colour: sg.frame_colour_name },
+    ].filter(Boolean) as { key: string; desc: string; colour: string }[];
+    const eyewearDone: string[] = [];
+    for (const j of jobs) {
+      const { data: existing } = await ctx.admin.from("renders").select("status").eq("order_id", ctx.order.id).eq("look_key", j.key).maybeSingle();
+      if (existing?.status === "done") { eyewearDone.push(j.key); continue; }
+      const prompt = tpl.replace("{haircut}", fh.recommended_haircut?.name ?? "his current haircut").replace("{beard}", fh.recommended_beard?.style ?? "his current beard")
+        .replace("{frame_description}", j.desc).replace("{colour}", j.colour ?? "a flattering colour");
+      const form = new FormData();
+      form.append("model", model); form.append("prompt", prompt); form.append("size", "1024x1024");
+      form.append("image[]", new File([face!], "face.jpg", { type: "image/jpeg" }));
+      const res = await fetch(`${GATEWAY}/images/edits`, { method: "POST", headers: { Authorization: `Bearer ${apiKey}` }, body: form });
+      if (!res.ok) throw new StepError(`Image ${j.key} failed (${res.status}): ${(await res.text()).slice(0, 300)}`, res.status === 429 || res.status >= 500);
+      const b64 = ((await res.json()) as any)?.data?.[0]?.b64_json;
+      if (!b64) throw new StepError(`Image ${j.key} came back empty`);
+      const bytes = Uint8Array.from(atob(b64), (c) => c.charCodeAt(0));
+      const path = `${ctx.order.user_id}/${ctx.order.id}/${j.key}.png`;
+      const up = await ctx.admin.storage.from("renders").upload(path, bytes, { contentType: "image/png", upsert: true });
+      if (up.error) throw new StepError(up.error.message);
+      await ctx.admin.from("renders").upsert({ order_id: ctx.order.id, run_id: ctx.run.id, look_key: j.key, prompt, storage_path: path, provider: "lovable", model, status: "done", approved: true }, { onConflict: "order_id,look_key" });
+      eyewearDone.push(j.key);
+    }
+    return { output: { count: done.length, looks: done, eyewear: eyewearDone }, model };
   },
 
   async review(ctx) {
@@ -315,7 +353,7 @@ const AGENTS: Record<StepKey, (ctx: Ctx) => Promise<AgentResult>> = {
       face_hair: o.face_hair, body: o.body, skin: o.skin, eyewear: o.eyewear,
       summary: o.stylist?.summary, outfits: o.stylist?.outfits, accessories: o.stylist?.accessories,
       watches: o.stylist?.watches, fragrance: o.stylist?.fragrance, plan_90_day: o.stylist?.plan_90_day,
-      renders: o.renders?.looks ?? [], review: { score: o.review?.score },
+      renders: o.renders?.looks ?? [], eyewear_renders: o.renders?.eyewear ?? [], review: { score: o.review?.score },
     };
     const { data: existing } = await ctx.admin.from("reports").select("id, version").eq("order_id", ctx.order.id).maybeSingle();
     let id = existing?.id;
@@ -340,7 +378,7 @@ const AGENTS: Record<StepKey, (ctx: Ctx) => Promise<AgentResult>> = {
 <h2>Face & hair</h2><p>Face shape: <b>${esc(d.face_hair?.face_shape)}</b></p><ul>${[d.face_hair?.recommended_haircut].filter(Boolean).map((h: any) => `<li><b>${esc(h.name)}</b> — ${esc(h.why)}</li>`).join("")}</ul><p>Beard: ${esc(d.face_hair?.recommended_beard?.style)} — ${esc(d.face_hair?.recommended_beard?.why)}</p>
 <h2>Body & fit</h2><p>${esc(d.body?.body_type)}</p><ul>${(d.body?.fit_rules ?? []).map((r: any) => `<li>${esc(r.rule ?? r)} — ${esc(r.why)}</li>`).join("")}</ul>
 <h2>Your colours</h2><p>${esc(d.skin?.undertone)} undertone · ${esc(d.skin?.season)}</p><div>${(d.skin?.power_colours ?? []).map((c: any) => `<span class="sw" style="background:${esc(c.hex)}"></span>`).join("")}</div>
-<h2>Eyewear</h2><ul>${(d.eyewear?.frames ?? []).map((f: any) => `<li>${esc(f.style)} — ${esc(f.why)}</li>`).join("")}</ul>
+<h2>Eyewear</h2><p>Size guide: <b>${esc(d.eyewear?.size_guide?.label)}</b> — ${esc(d.eyewear?.size_guide?.how_to_read_it)}</p><h3>Frames</h3><ul>${(d.eyewear?.prescription_frames ?? []).map((f: any) => `<li><span class="sw" style="width:14px;height:14px;background:${esc(f.colour_hex)}"></span> <b>${esc(f.shape)}</b> (${esc(f.rim)}, ${esc(f.colour_name)}) — ${esc(f.why_it_works)}</li>`).join("")}</ul>${(d.eyewear?.sunglasses ?? []).length ? `<h3>Sunglasses</h3><ul>${d.eyewear.sunglasses.map((g: any) => `<li><b>${esc(g.style)}</b> (${esc(g.frame_colour_name)}, ${esc(g.lens)}) — ${esc(g.why_it_works)}</li>`).join("")}</ul>` : ""}<h3>Avoid</h3><ul>${(d.eyewear?.avoid ?? []).map((a: any) => `<li>${esc(a.style)} — ${esc(a.why)}</li>`).join("")}</ul>
 <h2>16 outfits</h2><ol>${(d.outfits ?? []).map((o: any) => `<li><b>${esc(o.name)}</b> (${esc(o.occasion)}): ${esc((o.pieces ?? []).join(", "))}</li>`).join("")}</ol>
 <h2>Accessories, watches & fragrance</h2><ul>${[...(d.accessories ?? []).map((a: any) => a.item), ...(d.watches ?? []).map((w: any) => w.style), ...(d.fragrance ?? []).map((f: any) => f.name)].map((x) => `<li>${esc(x)}</li>`).join("")}</ul>
 <h2>Your 90-day plan</h2>${(d.plan_90_day ?? []).map((p: any) => `<p><b>${esc(p.weeks)} — ${esc(p.focus)}</b></p><ul>${(p.actions ?? []).map((a: any) => `<li>${esc(a)}</li>`).join("")}</ul>`).join("")}

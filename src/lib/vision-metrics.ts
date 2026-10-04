@@ -130,3 +130,25 @@ export function toCanvas(src: HTMLVideoElement | HTMLImageElement, max = 1600) {
 
 export const canvasToJpeg = (c: HTMLCanvasElement) =>
   new Promise<Blob>((res, rej) => c.toBlob((b) => (b ? res(b) : rej(new Error("encode failed"))), "image/jpeg", 0.86));
+
+/** Approximate eyewear measurements, scaled by the average human iris (11.7 mm). Needs the 478-point mesh. */
+export function eyewearMetrics(lm: Pt[], w: number, h: number) {
+  if (lm.length < 478) return { approximate: true, available: false };
+  const irisL = (dist(lm[469]!, lm[471]!, w, h) + dist(lm[470]!, lm[472]!, w, h)) / 2;
+  const irisR = (dist(lm[474]!, lm[476]!, w, h) + dist(lm[475]!, lm[477]!, w, h)) / 2;
+  const iris = (irisL + irisR) / 2;
+  if (!(iris > 2)) return { approximate: true, available: false };
+  const mm = 11.7 / iris;
+  const r = (px: number) => Math.round(px * mm * 10) / 10;
+  const pd = dist(lm[468]!, lm[473]!, w, h);
+  const temple = dist(lm[127]!, lm[356]!, w, h);
+  const cheek = dist(lm[234]!, lm[454]!, w, h);
+  const bridge = dist(lm[193]!, lm[417]!, w, h);
+  const browY = ((lm[105]!.y + lm[334]!.y) / 2) * h;
+  const pupilY = ((lm[468]!.y + lm[473]!.y) / 2) * h;
+  return {
+    approximate: true, available: true, scale: "iris_11.7mm", iris_diameter_px: +iris.toFixed(1),
+    pupillary_distance: r(pd), temple_width: r(temple), cheekbone_width: r(cheek),
+    nose_bridge_width: r(bridge), brow_to_pupil_height: r(pupilY - browY),
+  };
+}

@@ -600,16 +600,22 @@ export type Database = {
           active: boolean
           affiliate_url: string | null
           brand: string | null
+          bridge_mm: number | null
           category: string
           colour: string | null
+          colour_hex: string | null
           created_at: string
           fit_notes: string | null
           id: string
           image_url: string | null
+          lens_width_mm: number | null
           name: string
           price_max: number | null
           price_min: number | null
+          rim: string | null
+          shape: string | null
           tags: string[]
+          temple_mm: number | null
           updated_at: string
           url: string | null
         }
@@ -617,16 +623,22 @@ export type Database = {
           active?: boolean
           affiliate_url?: string | null
           brand?: string | null
+          bridge_mm?: number | null
           category: string
           colour?: string | null
+          colour_hex?: string | null
           created_at?: string
           fit_notes?: string | null
           id?: string
           image_url?: string | null
+          lens_width_mm?: number | null
           name: string
           price_max?: number | null
           price_min?: number | null
+          rim?: string | null
+          shape?: string | null
           tags?: string[]
+          temple_mm?: number | null
           updated_at?: string
           url?: string | null
         }
@@ -634,16 +646,22 @@ export type Database = {
           active?: boolean
           affiliate_url?: string | null
           brand?: string | null
+          bridge_mm?: number | null
           category?: string
           colour?: string | null
+          colour_hex?: string | null
           created_at?: string
           fit_notes?: string | null
           id?: string
           image_url?: string | null
+          lens_width_mm?: number | null
           name?: string
           price_max?: number | null
           price_min?: number | null
+          rim?: string | null
+          shape?: string | null
           tags?: string[]
+          temple_mm?: number | null
           updated_at?: string
           url?: string | null
         }

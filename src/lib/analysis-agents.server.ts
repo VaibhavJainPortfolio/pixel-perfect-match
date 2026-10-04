@@ -116,3 +116,22 @@ export async function runClaudeAgent<T extends z.ZodTypeAny>(opts: {
   }
   throw new AgentError("Unreachable");
 }
+
+const num = z.union([z.number(), s]);
+export const EyewearSchema = z.object({
+  face_shape_rule: s,
+  measurements_mm: z.object({ face_width: num, pupillary_distance: num, bridge: num }),
+  size_guide: z.object({ lens_width_mm: num, bridge_mm: num, temple_length_mm: num, label: s, how_to_read_it: s }),
+  prescription_frames: z.array(z.object({
+    rank: z.coerce.number(), shape: s, rim: s, material: s, colour_name: s, colour_hex: s, thickness: s, why_it_works: s, best_for: z.union([s, strs]),
+    product_id: s.optional(),
+  })).min(1),
+  sunglasses: z.array(z.object({
+    rank: z.coerce.number(), style: s, frame_colour_name: s, frame_colour_hex: s, lens: s, use_case: z.union([s, strs]), why_it_works: s,
+    product_id: s.optional(),
+  })),
+  avoid: z.array(z.object({ style: s, why: s })),
+  fit_check: strs,
+  brands: z.array(z.object({ brand: s, price_band: s, best_for: s })),
+  confidence: conf, measurement_note: s,
+});
