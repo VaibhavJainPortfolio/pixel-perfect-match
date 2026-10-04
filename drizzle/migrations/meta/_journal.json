@@ -29,6 +29,13 @@
       "when": 1791117185036,
       "tag": "0003_payments_invoices",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1791117551637,
+      "tag": "0004_photos_capture",
+      "breakpoints": true
     }
   ]
 }
