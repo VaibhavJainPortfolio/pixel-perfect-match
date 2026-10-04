@@ -25,7 +25,7 @@ export function OnboardingSheet() {
     supabase.auth.getUser().then(async ({ data }) => {
       if (!data.user) return;
       const { data: p } = await supabase.from("profiles").select("full_name, email, city").eq("id", data.user.id).maybeSingle();
-      setName(p?.full_name ?? (data.user.user_metadata?.full_name as string) ?? "");
+      setName(p?.full_name ?? (data.user.user_metadata?.['full_name'] as string) ?? "");
       setEmail(p?.email ?? data.user.email ?? "");
       setCity(p?.city ?? "");
     });
