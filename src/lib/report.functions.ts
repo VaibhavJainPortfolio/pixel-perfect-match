@@ -15,7 +15,7 @@ export const getMyReport = createServerFn({ method: "POST" })
     const { supabaseAdmin: admin } = await import("@/integrations/supabase/client.server");
     const { loadReportBundle } = await import("./report.server");
     const { data: rep } = await admin.from("reports").select("id, order_id, user_id, data, published_at, pdf_path").eq("id", data.reportId).single();
-    if (rep.user_id !== context.userId) throw new Error("Report not found");
+    if (!rep || rep.user_id !== context.userId) throw new Error("Report not found");
     const bundle = await loadReportBundle(admin, rep);
     const { data: ck } = await context.supabase.from("report_checklist").select("checked").eq("report_id", rep.id).maybeSingle();
     const { count } = await context.supabase.from("report_feedback").select("id", { count: "exact", head: true }).eq("report_id", rep.id);
