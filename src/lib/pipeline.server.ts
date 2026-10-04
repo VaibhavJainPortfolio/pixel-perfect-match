@@ -13,6 +13,8 @@ const DEFAULT_IMAGE_MODEL = "openai/gpt-image-2.5-sunburst";
 
 export const STEP_KEYS = ["measurements", "face_hair", "body", "skin", "eyewear", "stylist", "renders", "review", "report_build", "pdf", "delivery"] as const;
 export type StepKey = (typeof STEP_KEYS)[number];
+// Max price (₹) of a single catalogue item per monthly budget band; no cap for 15000_plus.
+const BUDGET_ITEM_CAP: Record<string, number> = { under_3000: 2500, "3000_7000": 5000, "7000_15000": 10000 };
 const BACKOFF_MS = [30_000, 120_000, 600_000]; // retry delays after failures 1, 2, 3
 const MAX_ATTEMPTS = BACKOFF_MS.length + 1;
 
@@ -258,16 +260,41 @@ const AGENTS: Record<StepKey, (ctx: Ctx) => Promise<AgentResult>> = {
   },
 
   async stylist(ctx) {
-    return aiJson(ctx, {
-      modelKey: "stylist_model", promptKey: "prompt_stylist",
-      defaultPrompt: `You are TheGent's senior personal stylist for Indian men. Build a complete wardrobe plan from the analyses, the budget band and city climate. Use Indian brands and occasions (office, weekend, date night, wedding/festive, travel). JSON: {"summary": string, "outfits": [{"key": "look_01"...,"name": string, "occasion": string, "pieces": string[], "colours": string[], "why": string, "budget_inr": number, "render_prompt": string}] (exactly 16, render_prompt describes the full outfit visually), "accessories": [{"item": string, "why": string}], "watches": [{"style": string, "example": string, "budget_inr": number}], "fragrance": [{"name": string, "notes": string, "when": string}], "plan_90_day": [{"weeks": string, "focus": string, "actions": string[]}] (6 blocks)}.`,
-      input: { basics: ctx.basics, face_hair: ctx.outputs.face_hair, body: ctx.outputs.body, skin: ctx.outputs.skin, eyewear: ctx.outputs.eyewear },
-      images: [await ctx.photoUrl("outfit")],
-    });
+    const fh = ctx.outputs.face_hair ?? {}, bd = ctx.outputs.body ?? {}, sk = ctx.outputs.skin ?? {};
+    const keys = [`face:${fh.face_shape}`, `body:${bd.body_type}`, `season:${String(sk.season ?? "").toLowerCase()}`, "all"];
+    const { data: houseRules } = await ctx.admin.from("style_rules").select("category, condition_key, rule_text, priority")
+      .eq("active", true).in("condition_key", keys).order("priority").limit(200);
+    const cap = BUDGET_ITEM_CAP[String(ctx.basics.budget_band ?? "")];
+    let q = ctx.admin.from("products_catalog").select("id, category, name, brand, colour, colour_hex, fit_notes, price_min, price_max, tags").eq("active", true);
+    if (cap) q = q.or(`price_min.is.null,price_min.lte.${cap}`);
+    const { data: raw } = await q.limit(500);
+    const size = bd.size_estimates ?? {};
+    const sizeTags = [`size:${String(size.shirt ?? "").toLowerCase()}`, `waist:${String(size.trouser_waist_in ?? "")}`];
+    const catalog = (raw ?? []).filter((p: any) => {
+      const st = (p.tags ?? []).map((t: string) => t.toLowerCase()).filter((t: string) => t.startsWith("size:") || t.startsWith("waist:"));
+      return !st.length || st.some((t: string) => sizeTags.includes(t));
+    }).slice(0, 150).map(({ tags, ...p }: any) => p);
+    const system = ctx.settings["prompt_stylist"];
+    if (typeof system !== "string" || !system.trim()) throw new StepError("Missing prompt prompt_stylist in AI settings", false);
+    try {
+      const r = await A.runClaudeAgent({
+        model: A.resolveClaudeModel(ctx.settings["stylist_model"]), system, schema: A.StylistSchema, maxOutputTokens: 32000, imageUrls: [],
+        input: {
+          customer: { age: ctx.basics.age, city: ctx.basics.city, budget_band: ctx.basics.budget_band, main_fix: ctx.basics.main_fix },
+          face_hair: fh, body: bd, skin: sk, house_rulebook: houseRules ?? [], catalogue: catalog,
+        },
+      });
+      const ids = new Set(catalog.map((p: any) => p.id));
+      for (const o of r.output.outfits) for (const it of o.items) if (it.product_id && !ids.has(it.product_id)) it.product_id = null; // drop invented ids
+      return r;
+    } catch (e: any) {
+      if (e instanceof A.AgentError) throw new StepError(e.message, e.retryable);
+      throw e;
+    }
   },
 
   async renders(ctx) {
-    const outfits: any[] = ctx.outputs.stylist?.outfits ?? [];
+    const outfits: any[] = [...(ctx.outputs.stylist?.outfits ?? [])].sort((a, b) => (a.render_priority ?? 99) - (b.render_priority ?? 99));
     const n = Math.max(0, Math.min(16, Number(ctx.settings["renders_per_report"] ?? 4) || 0));
     const setting = String(ctx.settings["image_model"] ?? "");
     const model = setting.startsWith("openai/gpt-image") ? setting : DEFAULT_IMAGE_MODEL;
@@ -279,10 +306,10 @@ const AGENTS: Record<StepKey, (ctx: Ctx) => Promise<AgentResult>> = {
     const [face, body] = await Promise.all([faceUrl, bodyUrl].map(async (u) => (u ? await (await fetch(u)).blob() : null)));
     const done: string[] = [];
     for (const look of outfits.slice(0, n)) { // one image per call
-      const key = String(look.key ?? `look_${done.length + 1}`);
+      const key = `look_${String(look.id ?? done.length + 1).replace(/[^a-zA-Z0-9_-]/g, "")}`;
       const { data: existing } = await ctx.admin.from("renders").select("status").eq("order_id", ctx.order.id).eq("look_key", key).maybeSingle();
       if (existing?.status === "done") { done.push(key); continue; }
-      const prompt = `Photorealistic full-length fashion photo of the same man shown in the reference photos, keeping his exact face, skin tone, hair, beard and body shape. He is wearing: ${look.render_prompt ?? (look.pieces ?? []).join(", ")}. Setting suited to ${look.occasion ?? "everyday"}. Natural light, clean background, standing pose, head to shoes visible. No text.`;
+      const prompt = `Photorealistic full-length fashion photo of the same man shown in the reference photos, keeping his exact face, skin tone, hair, beard and body shape. He is wearing: ${(look.items ?? []).map((i: any) => `${i.description} (${i.colour_hex})`).join("; ")}; shoes: ${typeof look.shoes === "string" ? look.shoes : JSON.stringify(look.shoes)}. Setting suited to ${look.occasion ?? "everyday"}. Natural light, clean background, standing pose, head to shoes visible. No text.`;
       const form = new FormData();
       form.append("model", model); form.append("prompt", prompt); form.append("size", "1024x1536");
       form.append("image[]", new File([face!], "face.jpg", { type: "image/jpeg" }));
@@ -351,8 +378,8 @@ const AGENTS: Record<StepKey, (ctx: Ctx) => Promise<AgentResult>> = {
     const data = {
       generated_at: new Date().toISOString(), name: ctx.basics.full_name, basics: ctx.basics,
       face_hair: o.face_hair, body: o.body, skin: o.skin, eyewear: o.eyewear,
-      summary: o.stylist?.summary, outfits: o.stylist?.outfits, accessories: o.stylist?.accessories,
-      watches: o.stylist?.watches, fragrance: o.stylist?.fragrance, plan_90_day: o.stylist?.plan_90_day,
+      stylist: o.stylist, summary: o.stylist?.summary, outfits: o.stylist?.outfits, accessories: o.stylist?.accessories,
+      watches: o.stylist?.accessories?.watches, fragrance: o.stylist?.fragrance, plan_90_days: o.stylist?.plan_90_days,
       renders: o.renders?.looks ?? [], eyewear_renders: o.renders?.eyewear ?? [], review: { score: o.review?.score },
     };
     const { data: existing } = await ctx.admin.from("reports").select("id, version").eq("order_id", ctx.order.id).maybeSingle();
@@ -374,14 +401,14 @@ const AGENTS: Record<StepKey, (ctx: Ctx) => Promise<AgentResult>> = {
     const d: any = rep.data ?? {};
     const esc = (s: unknown) => String(s ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]!));
     const html = `<!doctype html><html><head><meta charset="utf-8"><style>body{font-family:Georgia,serif;color:#121726;padding:32px}h1,h2{color:#121726}h2{border-bottom:2px solid #D1AE6E;padding-bottom:4px;margin-top:28px}li{margin:4px 0}.sw{display:inline-block;width:28px;height:28px;border-radius:6px;margin:2px;border:1px solid #ccc}</style></head><body>
-<h1>${esc(d.name)}'s Style Report</h1><p>${esc(d.summary)}</p>
+<h1>${esc(d.name)}'s Style Report</h1><p><b>${esc(d.summary?.headline ?? d.summary)}</b></p><ul>${(d.summary?.three_biggest_wins ?? []).map((w: any) => `<li><b>${esc(w.title)}</b> — ${esc(w.detail)}</li>`).join("")}</ul>
 <h2>Face & hair</h2><p>Face shape: <b>${esc(d.face_hair?.face_shape)}</b></p><ul>${[d.face_hair?.recommended_haircut].filter(Boolean).map((h: any) => `<li><b>${esc(h.name)}</b> — ${esc(h.why)}</li>`).join("")}</ul><p>Beard: ${esc(d.face_hair?.recommended_beard?.style)} — ${esc(d.face_hair?.recommended_beard?.why)}</p>
 <h2>Body & fit</h2><p>${esc(d.body?.body_type)}</p><ul>${(d.body?.fit_rules ?? []).map((r: any) => `<li>${esc(r.rule ?? r)} — ${esc(r.why)}</li>`).join("")}</ul>
 <h2>Your colours</h2><p>${esc(d.skin?.undertone)} undertone · ${esc(d.skin?.season)}</p><div>${(d.skin?.power_colours ?? []).map((c: any) => `<span class="sw" style="background:${esc(c.hex)}"></span>`).join("")}</div>
 <h2>Eyewear</h2><p>Size guide: <b>${esc(d.eyewear?.size_guide?.label)}</b> — ${esc(d.eyewear?.size_guide?.how_to_read_it)}</p><h3>Frames</h3><ul>${(d.eyewear?.prescription_frames ?? []).map((f: any) => `<li><span class="sw" style="width:14px;height:14px;background:${esc(f.colour_hex)}"></span> <b>${esc(f.shape)}</b> (${esc(f.rim)}, ${esc(f.colour_name)}) — ${esc(f.why_it_works)}</li>`).join("")}</ul>${(d.eyewear?.sunglasses ?? []).length ? `<h3>Sunglasses</h3><ul>${d.eyewear.sunglasses.map((g: any) => `<li><b>${esc(g.style)}</b> (${esc(g.frame_colour_name)}, ${esc(g.lens)}) — ${esc(g.why_it_works)}</li>`).join("")}</ul>` : ""}<h3>Avoid</h3><ul>${(d.eyewear?.avoid ?? []).map((a: any) => `<li>${esc(a.style)} — ${esc(a.why)}</li>`).join("")}</ul>
-<h2>16 outfits</h2><ol>${(d.outfits ?? []).map((o: any) => `<li><b>${esc(o.name)}</b> (${esc(o.occasion)}): ${esc((o.pieces ?? []).join(", "))}</li>`).join("")}</ol>
-<h2>Accessories, watches & fragrance</h2><ul>${[...(d.accessories ?? []).map((a: any) => a.item), ...(d.watches ?? []).map((w: any) => w.style), ...(d.fragrance ?? []).map((f: any) => f.name)].map((x) => `<li>${esc(x)}</li>`).join("")}</ul>
-<h2>Your 90-day plan</h2>${(d.plan_90_day ?? []).map((p: any) => `<p><b>${esc(p.weeks)} — ${esc(p.focus)}</b></p><ul>${(p.actions ?? []).map((a: any) => `<li>${esc(a)}</li>`).join("")}</ul>`).join("")}
+<h2>16 outfits</h2><ol>${(d.outfits ?? []).map((o: any) => `<li><b>${esc(o.name)}</b> (${esc(o.occasion)}): ${esc((o.items ?? []).map((i: any) => i.description).join(", "))}</li>`).join("")}</ol>
+<h2>Accessories, watches & fragrance</h2><ul>${[...(d.watches ?? []).map((w: any) => `${w.model_suggestion} (${w.use_case})`), ...(d.fragrance ?? []).map((f: any) => `${f.name} — ${f.occasion}`)].map((x) => `<li>${esc(x)}</li>`).join("")}</ul>
+<h2>Your 90-day plan</h2>${(d.plan_90_days ?? []).map((p: any) => `<p><b>Week ${esc(p.week)} — ${esc(p.focus)}</b></p><ul>${(p.tasks ?? []).map((a: any) => `<li>${esc(a)}</li>`).join("")}</ul>`).join("")}
 </body></html>`;
     const res = await fetch("https://api.pdfshift.io/v3/convert/pdf", {
       method: "POST", headers: { "content-type": "application/json", "X-API-Key": key },

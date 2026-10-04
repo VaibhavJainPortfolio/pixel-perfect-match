@@ -31,7 +31,7 @@ function Page() {
     <PageShell>
       <div className="space-y-10">
         <SectionHeading as="h1" eyebrow="Your style report" title={`${d.name ?? "Your"}'s style report`} />
-        {d.summary && <p className="text-sm text-muted-foreground">{d.summary}</p>}
+        {d.summary && <p className="text-sm text-muted-foreground">{typeof d.summary === "string" ? d.summary : d.summary.headline}</p>}
         {/* Other sections (face, hair, beard, skin, outfits…) are built separately; Eyewear sits between Beard and Skin tone. */}
         <EyewearSection eyewear={d.eyewear} renders={q.data.renderUrls} shop={q.data.shop} />
       </div>
