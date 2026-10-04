@@ -4,6 +4,7 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 export type Access = {
   userId: string;
   isStaff: boolean;
+  roles: string[];
   status: "active" | "suspended" | "deleted";
   needsOnboarding: boolean;
 };
@@ -13,14 +14,16 @@ export const getMyAccess = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }): Promise<Access> => {
     const { supabase, userId } = context;
-    const [staff, profile, terms] = await Promise.all([
+    const [staff, profile, terms, roleRows] = await Promise.all([
       supabase.rpc("is_staff", { _user_id: userId }),
       supabase.from("profiles").select("status, full_name, city").eq("id", userId).maybeSingle(),
       supabase.from("consents").select("id").eq("user_id", userId).eq("consent_type", "terms").eq("granted", true).limit(1),
+      supabase.from("user_roles").select("role").eq("user_id", userId),
     ]);
     return {
       userId,
       isStaff: !!staff.data,
+      roles: (roleRows.data ?? []).map((r: any) => r.role),
       status: (profile.data?.status ?? "active") as Access["status"],
       needsOnboarding: !profile.data?.full_name || !profile.data?.city || !(terms.data && terms.data.length),
     };
