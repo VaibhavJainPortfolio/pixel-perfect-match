@@ -43,7 +43,7 @@ export type Guidance = { ok: boolean; message: string };
 /** Live positioning hints. Coordinates are normalised (0..1). */
 export function guide(lm: Pt[], brightness: number): Guidance {
   const xs = [L.cheekL, L.cheekR].map((i) => lm[i]!.x);
-  const faceW = Math.abs(xs[1] - xs[0]);
+  const faceW = Math.abs(xs[1]! - xs[0]!);
   const cx = (lm[L.cheekL]!.x + lm[L.cheekR]!.x) / 2;
   const cy = (lm[L.top]!.y + lm[L.chin]!.y) / 2;
   const yaw = Math.abs(lm[L.nose]!.x - cx) / faceW;
