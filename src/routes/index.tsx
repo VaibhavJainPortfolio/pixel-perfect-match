@@ -84,7 +84,7 @@ function Index() {
           A personal stylist's analysis of your face, body and skin tone, built from 8 photos. Report in 30 minutes.
         </p>
         <div className="flex flex-col gap-3 sm:flex-row">
-          <GoldButton asChild size="lg"><Link to="/app/checkout">Get my style report – ₹1,999</Link></GoldButton>
+          <GoldButton asChild size="lg"><Link to="/app/checkout" search={{ product: "style_report" }}>Get my style report – ₹1,999</Link></GoldButton>
           <GhostButton asChild size="lg"><Link to="/free-check">Try a free face check</Link></GhostButton>
         </div>
       </section>
@@ -178,9 +178,9 @@ function Index() {
                     ))}
                   </ul>
                   {p.highlighted ? (
-                    <GoldButton asChild block><Link to="/app/checkout">Choose {p.name}</Link></GoldButton>
+                    <GoldButton asChild block><Link to="/app/checkout" search={{ product: p.product }}>Choose {p.name}</Link></GoldButton>
                   ) : (
-                    <GhostButton asChild block><Link to="/app/checkout">Choose {p.name}</Link></GhostButton>
+                    <GhostButton asChild block><Link to="/app/checkout" search={{ product: p.product }}>Choose {p.name}</Link></GhostButton>
                   )}
                 </Card>
               );
@@ -229,7 +229,7 @@ function Index() {
           showBar ? "translate-y-0" : "translate-y-full",
         )}
       >
-        <GoldButton asChild block size="lg"><Link to="/app/checkout">Get my style report – ₹1,999</Link></GoldButton>
+        <GoldButton asChild block size="lg"><Link to="/app/checkout" search={{ product: "style_report" }}>Get my style report – ₹1,999</Link></GoldButton>
       </div>
     </PageShell>
   );

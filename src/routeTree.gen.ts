@@ -23,6 +23,7 @@ import { Route as LegalTermsRouteImport } from './routes/legal.terms'
 import { Route as AuthenticatedAdminIndexRouteImport } from './routes/_authenticated/admin.index'
 import { Route as AuthenticatedAdminAiSettingsRouteImport } from './routes/_authenticated/admin.ai-settings'
 import { Route as AuthenticatedAdminAuditLogRouteImport } from './routes/_authenticated/admin.audit-log'
+import { Route as AuthenticatedAdminBusinessRouteImport } from './routes/_authenticated/admin.business'
 import { Route as AuthenticatedAdminCatalogRouteImport } from './routes/_authenticated/admin.catalog'
 import { Route as AuthenticatedAdminCouponsRouteImport } from './routes/_authenticated/admin.coupons'
 import { Route as AuthenticatedAdminPaymentsRouteImport } from './routes/_authenticated/admin.payments'
@@ -32,11 +33,13 @@ import { Route as AuthenticatedAdminRulebookRouteImport } from './routes/_authen
 import { Route as AuthenticatedAppIndexRouteImport } from './routes/_authenticated/app.index'
 import { Route as AuthenticatedAppAccountRouteImport } from './routes/_authenticated/app.account'
 import { Route as AuthenticatedAppCheckoutRouteImport } from './routes/_authenticated/app.checkout'
+import { Route as ApiPublicRazorpayWebhookRouteImport } from './routes/api/public/razorpay-webhook'
 import { Route as AuthenticatedAdminOrdersIndexRouteImport } from './routes/_authenticated/admin.orders.index'
 import { Route as AuthenticatedAdminOrdersIdRouteImport } from './routes/_authenticated/admin.orders.$id'
 import { Route as AuthenticatedAdminUsersIndexRouteImport } from './routes/_authenticated/admin.users.index'
 import { Route as AuthenticatedAdminUsersIdRouteImport } from './routes/_authenticated/admin.users.$id'
 import { Route as AuthenticatedAppReportReportIdRouteImport } from './routes/_authenticated/app.report.$reportId'
+import { Route as ApiPublicCronPaymentRemindersRouteImport } from './routes/api/public/cron/payment-reminders'
 import { Route as AuthenticatedAppOrderOrderIdBasicsRouteImport } from './routes/_authenticated/app.order.$orderId.basics'
 import { Route as AuthenticatedAppOrderOrderIdPhotosRouteImport } from './routes/_authenticated/app.order.$orderId.photos'
 import { Route as AuthenticatedAppOrderOrderIdProcessingRouteImport } from './routes/_authenticated/app.order.$orderId.processing'
@@ -112,6 +115,12 @@ const AuthenticatedAdminAuditLogRoute =
     path: '/audit-log',
     getParentRoute: () => AuthenticatedAdminRoute,
   } as any)
+const AuthenticatedAdminBusinessRoute =
+  AuthenticatedAdminBusinessRouteImport.update({
+    id: '/business',
+    path: '/business',
+    getParentRoute: () => AuthenticatedAdminRoute,
+  } as any)
 const AuthenticatedAdminCatalogRoute =
   AuthenticatedAdminCatalogRouteImport.update({
     id: '/catalog',
@@ -164,6 +173,12 @@ const AuthenticatedAppCheckoutRoute =
     path: '/checkout',
     getParentRoute: () => AuthenticatedAppRoute,
   } as any)
+const ApiPublicRazorpayWebhookRoute =
+  ApiPublicRazorpayWebhookRouteImport.update({
+    id: '/api/public/razorpay-webhook',
+    path: '/api/public/razorpay-webhook',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const AuthenticatedAdminOrdersIndexRoute =
   AuthenticatedAdminOrdersIndexRouteImport.update({
     id: '/orders/',
@@ -193,6 +208,12 @@ const AuthenticatedAppReportReportIdRoute =
     id: '/report/$reportId',
     path: '/report/$reportId',
     getParentRoute: () => AuthenticatedAppRoute,
+  } as any)
+const ApiPublicCronPaymentRemindersRoute =
+  ApiPublicCronPaymentRemindersRouteImport.update({
+    id: '/api/public/cron/payment-reminders',
+    path: '/api/public/cron/payment-reminders',
+    getParentRoute: () => rootRouteImport,
   } as any)
 const AuthenticatedAppOrderOrderIdBasicsRoute =
   AuthenticatedAppOrderOrderIdBasicsRouteImport.update({
@@ -226,6 +247,7 @@ export interface FileRoutesByFullPath {
   '/legal/terms': typeof LegalTermsRoute
   '/admin/ai-settings': typeof AuthenticatedAdminAiSettingsRoute
   '/admin/audit-log': typeof AuthenticatedAdminAuditLogRoute
+  '/admin/business': typeof AuthenticatedAdminBusinessRoute
   '/admin/catalog': typeof AuthenticatedAdminCatalogRoute
   '/admin/coupons': typeof AuthenticatedAdminCouponsRoute
   '/admin/payments': typeof AuthenticatedAdminPaymentsRoute
@@ -234,11 +256,13 @@ export interface FileRoutesByFullPath {
   '/admin/rulebook': typeof AuthenticatedAdminRulebookRoute
   '/app/account': typeof AuthenticatedAppAccountRoute
   '/app/checkout': typeof AuthenticatedAppCheckoutRoute
+  '/api/public/razorpay-webhook': typeof ApiPublicRazorpayWebhookRoute
   '/admin/': typeof AuthenticatedAdminIndexRoute
   '/app/': typeof AuthenticatedAppIndexRoute
   '/admin/orders/$id': typeof AuthenticatedAdminOrdersIdRoute
   '/admin/users/$id': typeof AuthenticatedAdminUsersIdRoute
   '/app/report/$reportId': typeof AuthenticatedAppReportReportIdRoute
+  '/api/public/cron/payment-reminders': typeof ApiPublicCronPaymentRemindersRoute
   '/admin/orders/': typeof AuthenticatedAdminOrdersIndexRoute
   '/admin/users/': typeof AuthenticatedAdminUsersIndexRoute
   '/app/order/$orderId/basics': typeof AuthenticatedAppOrderOrderIdBasicsRoute
@@ -256,6 +280,7 @@ export interface FileRoutesByTo {
   '/legal/terms': typeof LegalTermsRoute
   '/admin/ai-settings': typeof AuthenticatedAdminAiSettingsRoute
   '/admin/audit-log': typeof AuthenticatedAdminAuditLogRoute
+  '/admin/business': typeof AuthenticatedAdminBusinessRoute
   '/admin/catalog': typeof AuthenticatedAdminCatalogRoute
   '/admin/coupons': typeof AuthenticatedAdminCouponsRoute
   '/admin/payments': typeof AuthenticatedAdminPaymentsRoute
@@ -264,11 +289,13 @@ export interface FileRoutesByTo {
   '/admin/rulebook': typeof AuthenticatedAdminRulebookRoute
   '/app/account': typeof AuthenticatedAppAccountRoute
   '/app/checkout': typeof AuthenticatedAppCheckoutRoute
+  '/api/public/razorpay-webhook': typeof ApiPublicRazorpayWebhookRoute
   '/admin': typeof AuthenticatedAdminIndexRoute
   '/app': typeof AuthenticatedAppIndexRoute
   '/admin/orders/$id': typeof AuthenticatedAdminOrdersIdRoute
   '/admin/users/$id': typeof AuthenticatedAdminUsersIdRoute
   '/app/report/$reportId': typeof AuthenticatedAppReportReportIdRoute
+  '/api/public/cron/payment-reminders': typeof ApiPublicCronPaymentRemindersRoute
   '/admin/orders': typeof AuthenticatedAdminOrdersIndexRoute
   '/admin/users': typeof AuthenticatedAdminUsersIndexRoute
   '/app/order/$orderId/basics': typeof AuthenticatedAppOrderOrderIdBasicsRoute
@@ -290,6 +317,7 @@ export interface FileRoutesById {
   '/legal/terms': typeof LegalTermsRoute
   '/_authenticated/admin/ai-settings': typeof AuthenticatedAdminAiSettingsRoute
   '/_authenticated/admin/audit-log': typeof AuthenticatedAdminAuditLogRoute
+  '/_authenticated/admin/business': typeof AuthenticatedAdminBusinessRoute
   '/_authenticated/admin/catalog': typeof AuthenticatedAdminCatalogRoute
   '/_authenticated/admin/coupons': typeof AuthenticatedAdminCouponsRoute
   '/_authenticated/admin/payments': typeof AuthenticatedAdminPaymentsRoute
@@ -298,11 +326,13 @@ export interface FileRoutesById {
   '/_authenticated/admin/rulebook': typeof AuthenticatedAdminRulebookRoute
   '/_authenticated/app/account': typeof AuthenticatedAppAccountRoute
   '/_authenticated/app/checkout': typeof AuthenticatedAppCheckoutRoute
+  '/api/public/razorpay-webhook': typeof ApiPublicRazorpayWebhookRoute
   '/_authenticated/admin/': typeof AuthenticatedAdminIndexRoute
   '/_authenticated/app/': typeof AuthenticatedAppIndexRoute
   '/_authenticated/admin/orders/$id': typeof AuthenticatedAdminOrdersIdRoute
   '/_authenticated/admin/users/$id': typeof AuthenticatedAdminUsersIdRoute
   '/_authenticated/app/report/$reportId': typeof AuthenticatedAppReportReportIdRoute
+  '/api/public/cron/payment-reminders': typeof ApiPublicCronPaymentRemindersRoute
   '/_authenticated/admin/orders/': typeof AuthenticatedAdminOrdersIndexRoute
   '/_authenticated/admin/users/': typeof AuthenticatedAdminUsersIndexRoute
   '/_authenticated/app/order/$orderId/basics': typeof AuthenticatedAppOrderOrderIdBasicsRoute
@@ -324,6 +354,7 @@ export interface FileRouteTypes {
     | '/legal/terms'
     | '/admin/ai-settings'
     | '/admin/audit-log'
+    | '/admin/business'
     | '/admin/catalog'
     | '/admin/coupons'
     | '/admin/payments'
@@ -332,11 +363,13 @@ export interface FileRouteTypes {
     | '/admin/rulebook'
     | '/app/account'
     | '/app/checkout'
+    | '/api/public/razorpay-webhook'
     | '/admin/'
     | '/app/'
     | '/admin/orders/$id'
     | '/admin/users/$id'
     | '/app/report/$reportId'
+    | '/api/public/cron/payment-reminders'
     | '/admin/orders/'
     | '/admin/users/'
     | '/app/order/$orderId/basics'
@@ -354,6 +387,7 @@ export interface FileRouteTypes {
     | '/legal/terms'
     | '/admin/ai-settings'
     | '/admin/audit-log'
+    | '/admin/business'
     | '/admin/catalog'
     | '/admin/coupons'
     | '/admin/payments'
@@ -362,11 +396,13 @@ export interface FileRouteTypes {
     | '/admin/rulebook'
     | '/app/account'
     | '/app/checkout'
+    | '/api/public/razorpay-webhook'
     | '/admin'
     | '/app'
     | '/admin/orders/$id'
     | '/admin/users/$id'
     | '/app/report/$reportId'
+    | '/api/public/cron/payment-reminders'
     | '/admin/orders'
     | '/admin/users'
     | '/app/order/$orderId/basics'
@@ -387,6 +423,7 @@ export interface FileRouteTypes {
     | '/legal/terms'
     | '/_authenticated/admin/ai-settings'
     | '/_authenticated/admin/audit-log'
+    | '/_authenticated/admin/business'
     | '/_authenticated/admin/catalog'
     | '/_authenticated/admin/coupons'
     | '/_authenticated/admin/payments'
@@ -395,11 +432,13 @@ export interface FileRouteTypes {
     | '/_authenticated/admin/rulebook'
     | '/_authenticated/app/account'
     | '/_authenticated/app/checkout'
+    | '/api/public/razorpay-webhook'
     | '/_authenticated/admin/'
     | '/_authenticated/app/'
     | '/_authenticated/admin/orders/$id'
     | '/_authenticated/admin/users/$id'
     | '/_authenticated/app/report/$reportId'
+    | '/api/public/cron/payment-reminders'
     | '/_authenticated/admin/orders/'
     | '/_authenticated/admin/users/'
     | '/_authenticated/app/order/$orderId/basics'
@@ -417,6 +456,8 @@ export interface RootRouteChildren {
   LegalPrivacyRoute: typeof LegalPrivacyRoute
   LegalRefundsRoute: typeof LegalRefundsRoute
   LegalTermsRoute: typeof LegalTermsRoute
+  ApiPublicRazorpayWebhookRoute: typeof ApiPublicRazorpayWebhookRoute
+  ApiPublicCronPaymentRemindersRoute: typeof ApiPublicCronPaymentRemindersRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -519,6 +560,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminAuditLogRouteImport
       parentRoute: typeof AuthenticatedAdminRoute
     }
+    '/_authenticated/admin/business': {
+      id: '/_authenticated/admin/business'
+      path: '/business'
+      fullPath: '/admin/business'
+      preLoaderRoute: typeof AuthenticatedAdminBusinessRouteImport
+      parentRoute: typeof AuthenticatedAdminRoute
+    }
     '/_authenticated/admin/catalog': {
       id: '/_authenticated/admin/catalog'
       path: '/catalog'
@@ -582,6 +630,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAppCheckoutRouteImport
       parentRoute: typeof AuthenticatedAppRoute
     }
+    '/api/public/razorpay-webhook': {
+      id: '/api/public/razorpay-webhook'
+      path: '/api/public/razorpay-webhook'
+      fullPath: '/api/public/razorpay-webhook'
+      preLoaderRoute: typeof ApiPublicRazorpayWebhookRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/_authenticated/admin/orders/': {
       id: '/_authenticated/admin/orders/'
       path: '/orders'
@@ -617,6 +672,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAppReportReportIdRouteImport
       parentRoute: typeof AuthenticatedAppRoute
     }
+    '/api/public/cron/payment-reminders': {
+      id: '/api/public/cron/payment-reminders'
+      path: '/api/public/cron/payment-reminders'
+      fullPath: '/api/public/cron/payment-reminders'
+      preLoaderRoute: typeof ApiPublicCronPaymentRemindersRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/_authenticated/app/order/$orderId/basics': {
       id: '/_authenticated/app/order/$orderId/basics'
       path: '/order/$orderId/basics'
@@ -644,6 +706,7 @@ declare module '@tanstack/react-router' {
 interface AuthenticatedAdminRouteChildren {
   AuthenticatedAdminAiSettingsRoute: typeof AuthenticatedAdminAiSettingsRoute
   AuthenticatedAdminAuditLogRoute: typeof AuthenticatedAdminAuditLogRoute
+  AuthenticatedAdminBusinessRoute: typeof AuthenticatedAdminBusinessRoute
   AuthenticatedAdminCatalogRoute: typeof AuthenticatedAdminCatalogRoute
   AuthenticatedAdminCouponsRoute: typeof AuthenticatedAdminCouponsRoute
   AuthenticatedAdminPaymentsRoute: typeof AuthenticatedAdminPaymentsRoute
@@ -660,6 +723,7 @@ interface AuthenticatedAdminRouteChildren {
 const AuthenticatedAdminRouteChildren: AuthenticatedAdminRouteChildren = {
   AuthenticatedAdminAiSettingsRoute: AuthenticatedAdminAiSettingsRoute,
   AuthenticatedAdminAuditLogRoute: AuthenticatedAdminAuditLogRoute,
+  AuthenticatedAdminBusinessRoute: AuthenticatedAdminBusinessRoute,
   AuthenticatedAdminCatalogRoute: AuthenticatedAdminCatalogRoute,
   AuthenticatedAdminCouponsRoute: AuthenticatedAdminCouponsRoute,
   AuthenticatedAdminPaymentsRoute: AuthenticatedAdminPaymentsRoute,
@@ -725,6 +789,8 @@ const rootRouteChildren: RootRouteChildren = {
   LegalPrivacyRoute: LegalPrivacyRoute,
   LegalRefundsRoute: LegalRefundsRoute,
   LegalTermsRoute: LegalTermsRoute,
+  ApiPublicRazorpayWebhookRoute: ApiPublicRazorpayWebhookRoute,
+  ApiPublicCronPaymentRemindersRoute: ApiPublicCronPaymentRemindersRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

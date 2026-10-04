@@ -17,3 +17,5 @@
 - Access checks (staff role, suspended/deleted status, onboarding) go through the `getMyAccess` server fn in `src/lib/account.functions.ts`; `/app` and `/admin` layouts both use it — one server-side source of truth.
 - Account deletion/photo deletion run as authenticated server fns using the admin client only after auth; profiles are anonymised (never hard-deleted) so orders/invoices stay for tax records.
 - Consent changes always insert new `consents` rows; the latest row per type is current — history is never overwritten.
+- Payments: prices/coupons are computed only server-side (`buildQuote` in `src/lib/payments.server.ts`); `markOrderPaid` is idempotent and shared by the browser verify call and the Razorpay webhook (`/api/public/razorpay-webhook`, deduped via `payment_events`).
+- Invoices number via the `next_invoice_number` DB function (per financial year) and use seller details from the single-row `business_settings` table; GST split compares customer state to the seller state.
