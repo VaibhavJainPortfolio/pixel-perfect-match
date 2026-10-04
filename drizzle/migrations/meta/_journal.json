@@ -57,6 +57,13 @@
       "when": 1791130196449,
       "tag": "0007_eyewear_catalog_fields",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1791130799220,
+      "tag": "0008_render_quality",
+      "breakpoints": true
     }
   ]
 }

@@ -727,13 +727,19 @@ export type Database = {
       renders: {
         Row: {
           approved: boolean
+          attempts: number
+          body_preserved: boolean | null
+          cost_usd: number
           created_at: string
           id: string
+          is_hero: boolean
+          likeness_score: number | null
           look_key: string
           model: string | null
           order_id: string
           prompt: string | null
           provider: string | null
+          quality_issues: Json | null
           run_id: string | null
           status: string
           storage_path: string | null
@@ -741,13 +747,19 @@ export type Database = {
         }
         Insert: {
           approved?: boolean
+          attempts?: number
+          body_preserved?: boolean | null
+          cost_usd?: number
           created_at?: string
           id?: string
+          is_hero?: boolean
+          likeness_score?: number | null
           look_key: string
           model?: string | null
           order_id: string
           prompt?: string | null
           provider?: string | null
+          quality_issues?: Json | null
           run_id?: string | null
           status?: string
           storage_path?: string | null
@@ -755,13 +767,19 @@ export type Database = {
         }
         Update: {
           approved?: boolean
+          attempts?: number
+          body_preserved?: boolean | null
+          cost_usd?: number
           created_at?: string
           id?: string
+          is_hero?: boolean
+          likeness_score?: number | null
           look_key?: string
           model?: string | null
           order_id?: string
           prompt?: string | null
           provider?: string | null
+          quality_issues?: Json | null
           run_id?: string | null
           status?: string
           storage_path?: string | null
