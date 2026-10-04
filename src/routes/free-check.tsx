@@ -105,7 +105,7 @@ function Result({ shape, onRetry }: { shape: FaceShape; onRetry: () => void }) {
 
       <Card className="space-y-4 border-gold p-6">
         <p className="text-lg text-foreground">Want your full report with outfits and AI images of you?</p>
-        <GoldButton asChild block size="lg"><Link to="/app/checkout">Get my report →</Link></GoldButton>
+        <GoldButton asChild block size="lg"><Link to="/app/checkout" search={{ product: "style_report" }}>Get my report →</Link></GoldButton>
       </Card>
 
       <GhostButton block onClick={onRetry}><RotateCcw />Check again</GhostButton>

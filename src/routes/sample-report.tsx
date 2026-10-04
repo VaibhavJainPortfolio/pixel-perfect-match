@@ -27,7 +27,7 @@ function Page() {
         <Card className="flex flex-col items-center gap-3 p-8 text-center">
           <Lock className="size-6 text-gold" />
           <h2 className="text-2xl text-foreground">Unlock the full report — yours, not a sample.</h2>
-          <GoldButton asChild size="lg"><Link to="/app/checkout">Get my style report – ₹1,999</Link></GoldButton>
+          <GoldButton asChild size="lg"><Link to="/app/checkout" search={{ product: "style_report" }}>Get my style report – ₹1,999</Link></GoldButton>
         </Card>
       </Placeholder>
     </PageShell>
