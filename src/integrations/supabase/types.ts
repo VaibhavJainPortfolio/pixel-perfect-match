@@ -899,6 +899,16 @@ export type Database = {
       }
       is_admin: { Args: { _user_id: string }; Returns: boolean }
       is_staff: { Args: { _user_id: string }; Returns: boolean }
+      my_sessions: {
+        Args: never
+        Returns: {
+          created_at: string
+          id: string
+          ip: string
+          updated_at: string
+          user_agent: string
+        }[]
+      }
     }
     Enums: {
       app_role: "customer" | "stylist" | "support" | "admin" | "super_admin"
@@ -908,6 +918,9 @@ export type Database = {
         | "privacy"
         | "marketing"
         | "ai_training"
+        | "whatsapp"
+        | "email"
+        | "age_18"
       discount_type: "percent" | "flat"
       notification_channel: "whatsapp" | "email"
       order_status:
@@ -1095,6 +1108,9 @@ export const Constants = {
         "privacy",
         "marketing",
         "ai_training",
+        "whatsapp",
+        "email",
+        "age_18",
       ],
       discount_type: ["percent", "flat"],
       notification_channel: ["whatsapp", "email"],

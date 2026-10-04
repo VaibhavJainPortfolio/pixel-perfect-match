@@ -1,17 +1,25 @@
 import { createFileRoute, Link, Outlet, redirect } from "@tanstack/react-router";
-import { fetchMyRoles, STAFF_ROLES } from "@/hooks/use-auth";
+import { getMyAccess } from "@/lib/account.functions";
+import { AccountHold } from "@/components/gent/AccountHold";
 import { Logo } from "@/components/gent/PageShell";
 import { ThemeToggle } from "@/components/gent/ThemeToggle";
 
+// RequireRole for /admin/*: staff check runs on the server via has_role().
 export const Route = createFileRoute("/_authenticated/admin")({
-  beforeLoad: async ({ context }) => {
-    const roles = await fetchMyRoles(context.user.id);
-    if (!roles.some((r) => (STAFF_ROLES as readonly string[]).includes(r))) throw redirect({ to: "/app" });
-    return { roles };
+  beforeLoad: async () => {
+    const access = await getMyAccess();
+    if (!access.isStaff) throw redirect({ to: "/app" });
+    return { access };
   },
   head: () => ({ meta: [{ title: "Admin — TheGent's" }, { name: "robots", content: "noindex" }] }),
-  component: AdminLayout,
+  component: AdminGate,
 });
+
+function AdminGate() {
+  const { access } = Route.useRouteContext();
+  if (access.status !== "active") return <AccountHold />;
+  return <AdminLayout />;
+}
 
 const links = [
   ["/admin", "Overview"], ["/admin/orders", "Orders"], ["/admin/pipeline", "Pipeline"],
