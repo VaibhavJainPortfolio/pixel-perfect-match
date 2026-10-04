@@ -48,7 +48,9 @@ async function measureCanvas(slot: Slot, c: HTMLCanvasElement): Promise<Record<s
     if (slot.kind === "face") {
       const det = await getDetector("face");
       const lm = det.detectForVideo(c, nextTs()).faceLandmarks?.[0] as Pt[] | undefined;
-      return lm ? { ...base, kind: "face", ...faceMetrics(lm, ctx, c.width, c.height) } : { ...base, kind: "face", detected: false };
+      if (!lm) return { ...base, kind: "face", detected: false };
+      const extra = slot.id === "face_front" ? { eyewear_mm: eyewearMetrics(lm, c.width, c.height) } : {};
+      return { ...base, kind: "face", ...faceMetrics(lm, ctx, c.width, c.height), ...extra };
     }
     if (slot.kind === "body" || slot.kind === "outfit") {
       const det = await getDetector("pose");
