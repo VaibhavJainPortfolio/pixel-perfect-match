@@ -146,6 +146,36 @@ export type Database = {
         }
         Relationships: []
       }
+      leads: {
+        Row: {
+          created_at: string
+          face_shape: string | null
+          first_name: string
+          id: string
+          source: string
+          updated_at: string
+          whatsapp: string
+        }
+        Insert: {
+          created_at?: string
+          face_shape?: string | null
+          first_name: string
+          id?: string
+          source?: string
+          updated_at?: string
+          whatsapp: string
+        }
+        Update: {
+          created_at?: string
+          face_shape?: string | null
+          first_name?: string
+          id?: string
+          source?: string
+          updated_at?: string
+          whatsapp?: string
+        }
+        Relationships: []
+      }
       notifications: {
         Row: {
           channel: Database["public"]["Enums"]["notification_channel"]
@@ -412,6 +442,51 @@ export type Database = {
           },
         ]
       }
+      pricing: {
+        Row: {
+          active: boolean
+          amount_paise: number
+          created_at: string
+          features: string[]
+          gst_rate: number
+          highlighted: boolean
+          id: string
+          name: string
+          product: Database["public"]["Enums"]["product_type"]
+          sort_order: number
+          tagline: string | null
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          amount_paise: number
+          created_at?: string
+          features?: string[]
+          gst_rate?: number
+          highlighted?: boolean
+          id?: string
+          name: string
+          product: Database["public"]["Enums"]["product_type"]
+          sort_order?: number
+          tagline?: string | null
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          amount_paise?: number
+          created_at?: string
+          features?: string[]
+          gst_rate?: number
+          highlighted?: boolean
+          id?: string
+          name?: string
+          product?: Database["public"]["Enums"]["product_type"]
+          sort_order?: number
+          tagline?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       products_catalog: {
         Row: {
           active: boolean
@@ -657,6 +732,63 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      reviews: {
+        Row: {
+          approved: boolean
+          body: string
+          city: string | null
+          created_at: string
+          display_name: string
+          id: string
+          rating: number
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          approved?: boolean
+          body: string
+          city?: string | null
+          created_at?: string
+          display_name: string
+          id?: string
+          rating?: number
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          approved?: boolean
+          body?: string
+          city?: string | null
+          created_at?: string
+          display_name?: string
+          id?: string
+          rating?: number
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      site_content: {
+        Row: {
+          created_at: string
+          key: string
+          updated_at: string
+          value: Json
+        }
+        Insert: {
+          created_at?: string
+          key: string
+          updated_at?: string
+          value?: Json
+        }
+        Update: {
+          created_at?: string
+          key?: string
+          updated_at?: string
+          value?: Json
+        }
+        Relationships: []
       }
       style_rules: {
         Row: {

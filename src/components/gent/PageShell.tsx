@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { SITE } from "@/lib/site";
 import { Link } from "@tanstack/react-router";
 import { cn } from "@/lib/utils";
 import { useSession } from "@/hooks/use-auth";
@@ -57,15 +58,29 @@ export function PageShell({
         </nav>
       </header>
       <main className={cn("mx-auto w-full flex-1 px-5 py-10", width, className)}>{children}</main>
-      <footer className="border-t border-border">
-        <div className={cn("mx-auto flex flex-col gap-4 px-5 py-8 text-sm text-muted-foreground sm:flex-row sm:items-center sm:justify-between", width)}>
-          <p>© {new Date().getFullYear()} TheGent's Style Report</p>
-          <div className="flex gap-5">
-            <Link to="/legal/privacy" className="hover:text-foreground">Privacy</Link>
-            <Link to="/legal/terms" className="hover:text-foreground">Terms</Link>
-            <Link to="/legal/refunds" className="hover:text-foreground">Refunds</Link>
+      <footer className="border-t border-border pb-20 md:pb-0">
+        <div className={cn("mx-auto grid gap-8 px-5 py-10 text-sm text-muted-foreground sm:grid-cols-3", width)}>
+          <div className="space-y-2">
+            <Logo />
+            <p>Personal style reports for Indian men.</p>
+            <a href={`mailto:${SITE.email}`} className="block hover:text-gold">{SITE.email}</a>
+          </div>
+          <div className="space-y-2">
+            <p className="eyebrow">Legal</p>
+            <Link to="/legal/privacy" className="block hover:text-foreground">Privacy policy</Link>
+            <Link to="/legal/terms" className="block hover:text-foreground">Terms of service</Link>
+            <Link to="/legal/refunds" className="block hover:text-foreground">Refund policy</Link>
+          </div>
+          <div className="space-y-2">
+            <p className="eyebrow">Grievance officer</p>
+            <p>{SITE.grievanceName}</p>
+            <a href={`mailto:${SITE.grievanceEmail}`} className="block hover:text-gold">{SITE.grievanceEmail}</a>
+            <p className="pt-2">{SITE.address}</p>
           </div>
         </div>
+        <p className={cn("mx-auto border-t border-border px-5 py-5 text-xs text-muted-foreground", width)}>
+          © {new Date().getFullYear()} TheGent's Style Report. AI-generated images are illustrations, not guarantees.
+        </p>
       </footer>
     </div>
   );
