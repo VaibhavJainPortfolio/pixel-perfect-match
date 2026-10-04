@@ -3,7 +3,7 @@ import { Camera, ImageUp } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { Slot } from "@/lib/capture-slots";
 import {
-  bodyMetrics, canvasToJpeg, faceMetrics, faceYaw, luminance, sharpness, toCanvas, wristMetrics, type Pt,
+  bodyMetrics, canvasToJpeg, eyewearMetrics, faceMetrics, faceYaw, luminance, sharpness, toCanvas, wristMetrics, type Pt,
 } from "@/lib/vision-metrics";
 import { GoldButton, GhostButton } from "./buttons";
 
@@ -49,7 +49,7 @@ async function measureCanvas(slot: Slot, c: HTMLCanvasElement): Promise<Record<s
       const det = await getDetector("face");
       const lm = det.detectForVideo(c, nextTs()).faceLandmarks?.[0] as Pt[] | undefined;
       if (!lm) return { ...base, kind: "face", detected: false };
-      const extra = slot.id === "face_front" ? { eyewear_mm: eyewearMetrics(lm, c.width, c.height) } : {};
+      const extra = slot.key === "face_front" ? { eyewear_mm: eyewearMetrics(lm, c.width, c.height) } : {};
       return { ...base, kind: "face", ...faceMetrics(lm, ctx, c.width, c.height), ...extra };
     }
     if (slot.kind === "body" || slot.kind === "outfit") {
