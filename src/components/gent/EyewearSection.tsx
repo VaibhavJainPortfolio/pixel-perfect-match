@@ -1,7 +1,7 @@
 import { Card, SectionHeading } from "./primitives";
 import { GhostButton } from "./buttons";
 
-type Frame = Record<string, any> & { rank: number; why_it_works: string };
+type Frame = any;
 
 /** Simple line drawing of a frame shape, in the recommended colour (dynamic per-report data, so inline colour). */
 export function FrameSvg({ shape, colour, rim, sun }: { shape: string; colour: string; rim?: string | undefined; sun?: boolean | undefined }) {
