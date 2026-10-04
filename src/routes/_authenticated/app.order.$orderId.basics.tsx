@@ -46,7 +46,7 @@ function Page() {
 
   useEffect(() => {
     intakeFn({ data: { orderId } }).then((r) => {
-      const b = (r.submission?.basics ?? {}) as Record<string, any>;
+      const b: any = r.submission?.basics ?? {};
       const p = r.profile ?? ({} as any);
       setName(b.full_name ?? p.full_name ?? ""); setCity(b.city ?? p.city ?? "");
       const a = b.age ?? p.age; if (a) setAge(String(a));

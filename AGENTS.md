@@ -19,3 +19,5 @@
 - Consent changes always insert new `consents` rows; the latest row per type is current — history is never overwritten.
 - Payments: prices/coupons are computed only server-side (`buildQuote` in `src/lib/payments.server.ts`); `markOrderPaid` is idempotent and shared by the browser verify call and the Razorpay webhook (`/api/public/razorpay-webhook`, deduped via `payment_events`).
 - Invoices number via the `next_invoice_number` DB function (per financial year) and use seller details from the single-row `business_settings` table; GST split compares customer state to the seller state.
+- Photo intake: MediaPipe guidance + measurements run in the browser (`GuidedCamera`, `vision-metrics.ts`); AI quality checks and all photo-row writes happen server-side in `intake.functions.ts`. A DB trigger stops customers setting `photos.quality_status` themselves.
+- AI calls go through the Lovable AI Gateway Responses API; `ai_settings` model values are used only when they are exact gateway `openai/*` ids, otherwise the default model.

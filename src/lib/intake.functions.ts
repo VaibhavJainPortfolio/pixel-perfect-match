@@ -75,7 +75,7 @@ export const checkPhoto = createServerFn({ method: "POST" })
 
     await admin.from("photos").upsert({
       submission_id: submission.id, user_id: context.userId, slot: data.slot, storage_path: path,
-      quality_status: "pending", quality_feedback: null, landmarks: data.landmarks, width: data.width, height: data.height,
+      quality_status: "pending", quality_feedback: null, landmarks: data.landmarks as any, width: data.width, height: data.height,
     }, { onConflict: "submission_id,slot" });
 
     const { data: setting } = await admin.from("ai_settings").select("value").eq("key", "analysis_model").maybeSingle();
