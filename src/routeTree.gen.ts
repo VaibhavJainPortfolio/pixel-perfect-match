@@ -34,6 +34,7 @@ import { Route as AuthenticatedAppIndexRouteImport } from './routes/_authenticat
 import { Route as AuthenticatedAppAccountRouteImport } from './routes/_authenticated/app.account'
 import { Route as AuthenticatedAppCheckoutRouteImport } from './routes/_authenticated/app.checkout'
 import { Route as ApiPublicRazorpayWebhookRouteImport } from './routes/api/public/razorpay-webhook'
+import { Route as PrintReportReportIdRouteImport } from './routes/print.report.$reportId'
 import { Route as AuthenticatedAdminOrdersIndexRouteImport } from './routes/_authenticated/admin.orders.index'
 import { Route as AuthenticatedAdminOrdersIdRouteImport } from './routes/_authenticated/admin.orders.$id'
 import { Route as AuthenticatedAdminUsersIndexRouteImport } from './routes/_authenticated/admin.users.index'
@@ -180,6 +181,11 @@ const ApiPublicRazorpayWebhookRoute =
     path: '/api/public/razorpay-webhook',
     getParentRoute: () => rootRouteImport,
   } as any)
+const PrintReportReportIdRoute = PrintReportReportIdRouteImport.update({
+  id: '/print/report/$reportId',
+  path: '/print/report/$reportId',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AuthenticatedAdminOrdersIndexRoute =
   AuthenticatedAdminOrdersIndexRouteImport.update({
     id: '/orders/',
@@ -263,6 +269,7 @@ export interface FileRoutesByFullPath {
   '/app/account': typeof AuthenticatedAppAccountRoute
   '/app/checkout': typeof AuthenticatedAppCheckoutRoute
   '/api/public/razorpay-webhook': typeof ApiPublicRazorpayWebhookRoute
+  '/print/report/$reportId': typeof PrintReportReportIdRoute
   '/admin/': typeof AuthenticatedAdminIndexRoute
   '/app/': typeof AuthenticatedAppIndexRoute
   '/admin/orders/$id': typeof AuthenticatedAdminOrdersIdRoute
@@ -297,6 +304,7 @@ export interface FileRoutesByTo {
   '/app/account': typeof AuthenticatedAppAccountRoute
   '/app/checkout': typeof AuthenticatedAppCheckoutRoute
   '/api/public/razorpay-webhook': typeof ApiPublicRazorpayWebhookRoute
+  '/print/report/$reportId': typeof PrintReportReportIdRoute
   '/admin': typeof AuthenticatedAdminIndexRoute
   '/app': typeof AuthenticatedAppIndexRoute
   '/admin/orders/$id': typeof AuthenticatedAdminOrdersIdRoute
@@ -335,6 +343,7 @@ export interface FileRoutesById {
   '/_authenticated/app/account': typeof AuthenticatedAppAccountRoute
   '/_authenticated/app/checkout': typeof AuthenticatedAppCheckoutRoute
   '/api/public/razorpay-webhook': typeof ApiPublicRazorpayWebhookRoute
+  '/print/report/$reportId': typeof PrintReportReportIdRoute
   '/_authenticated/admin/': typeof AuthenticatedAdminIndexRoute
   '/_authenticated/app/': typeof AuthenticatedAppIndexRoute
   '/_authenticated/admin/orders/$id': typeof AuthenticatedAdminOrdersIdRoute
@@ -373,6 +382,7 @@ export interface FileRouteTypes {
     | '/app/account'
     | '/app/checkout'
     | '/api/public/razorpay-webhook'
+    | '/print/report/$reportId'
     | '/admin/'
     | '/app/'
     | '/admin/orders/$id'
@@ -407,6 +417,7 @@ export interface FileRouteTypes {
     | '/app/account'
     | '/app/checkout'
     | '/api/public/razorpay-webhook'
+    | '/print/report/$reportId'
     | '/admin'
     | '/app'
     | '/admin/orders/$id'
@@ -444,6 +455,7 @@ export interface FileRouteTypes {
     | '/_authenticated/app/account'
     | '/_authenticated/app/checkout'
     | '/api/public/razorpay-webhook'
+    | '/print/report/$reportId'
     | '/_authenticated/admin/'
     | '/_authenticated/app/'
     | '/_authenticated/admin/orders/$id'
@@ -469,6 +481,7 @@ export interface RootRouteChildren {
   LegalRefundsRoute: typeof LegalRefundsRoute
   LegalTermsRoute: typeof LegalTermsRoute
   ApiPublicRazorpayWebhookRoute: typeof ApiPublicRazorpayWebhookRoute
+  PrintReportReportIdRoute: typeof PrintReportReportIdRoute
   ApiPublicCronPaymentRemindersRoute: typeof ApiPublicCronPaymentRemindersRoute
   ApiPublicPipelineStepRoute: typeof ApiPublicPipelineStepRoute
 }
@@ -650,6 +663,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicRazorpayWebhookRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/print/report/$reportId': {
+      id: '/print/report/$reportId'
+      path: '/print/report/$reportId'
+      fullPath: '/print/report/$reportId'
+      preLoaderRoute: typeof PrintReportReportIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/_authenticated/admin/orders/': {
       id: '/_authenticated/admin/orders/'
       path: '/orders'
@@ -810,6 +830,7 @@ const rootRouteChildren: RootRouteChildren = {
   LegalRefundsRoute: LegalRefundsRoute,
   LegalTermsRoute: LegalTermsRoute,
   ApiPublicRazorpayWebhookRoute: ApiPublicRazorpayWebhookRoute,
+  PrintReportReportIdRoute: PrintReportReportIdRoute,
   ApiPublicCronPaymentRemindersRoute: ApiPublicCronPaymentRemindersRoute,
   ApiPublicPipelineStepRoute: ApiPublicPipelineStepRoute,
 }
