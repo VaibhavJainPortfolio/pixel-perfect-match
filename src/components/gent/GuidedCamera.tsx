@@ -50,7 +50,10 @@ async function measureCanvas(slot: Slot, c: HTMLCanvasElement): Promise<Record<s
       const lm = det.detectForVideo(c, nextTs()).faceLandmarks?.[0] as Pt[] | undefined;
       if (!lm) return { ...base, kind: "face", detected: false };
       const extra = slot.key === "face_front" ? { eyewear_mm: eyewearMetrics(lm, c.width, c.height) } : {};
-      return { ...base, kind: "face", ...faceMetrics(lm, ctx, c.width, c.height), ...extra };
+      const pt = (i: number) => [+lm[i]!.x.toFixed(4), +lm[i]!.y.toFixed(4)];
+      // Normalised key points for the report's face overlay (ellipse + forehead/cheekbone/jaw lines)
+      const overlay = { top: pt(10), chin: pt(152), forehead: [pt(54), pt(284)], cheek: [pt(234), pt(454)], jaw: [pt(172), pt(397)] };
+      return { ...base, kind: "face", ...faceMetrics(lm, ctx, c.width, c.height), ...extra, overlay };
     }
     if (slot.kind === "body" || slot.kind === "outfit") {
       const det = await getDetector("pose");
@@ -58,7 +61,9 @@ async function measureCanvas(slot: Slot, c: HTMLCanvasElement): Promise<Record<s
       const lm = res.landmarks?.[0] as Pt[] | undefined;
       const mask = readMask(res);
       if (slot.kind === "outfit") return { ...base, kind: "outfit", detected: !!lm };
-      return lm ? { ...base, kind: "body", ...bodyMetrics(lm, mask, c.width, c.height) } : { ...base, kind: "body", detected: false };
+      const pt = (i: number) => lm ? [+lm[i]!.x.toFixed(4), +lm[i]!.y.toFixed(4)] : null;
+      const overlay = lm ? { head: pt(0), shoulders: [pt(11), pt(12)], hips: [pt(23), pt(24)], ankles: [pt(27), pt(28)] } : null;
+      return lm ? { ...base, kind: "body", ...bodyMetrics(lm, mask, c.width, c.height), overlay } : { ...base, kind: "body", detected: false };
     }
     return { ...base, kind: "wrist", ...wristMetrics(ctx, c.width, c.height) };
   } catch (e) {

@@ -308,6 +308,7 @@ export type Database = {
           id: string
           invoice_number: string | null
           invoice_url: string | null
+          needs_support: boolean
           paid_at: string | null
           product: Database["public"]["Enums"]["product_type"]
           razorpay_order_id: string | null
@@ -330,6 +331,7 @@ export type Database = {
           id?: string
           invoice_number?: string | null
           invoice_url?: string | null
+          needs_support?: boolean
           paid_at?: string | null
           product?: Database["public"]["Enums"]["product_type"]
           razorpay_order_id?: string | null
@@ -352,6 +354,7 @@ export type Database = {
           id?: string
           invoice_number?: string | null
           invoice_url?: string | null
+          needs_support?: boolean
           paid_at?: string | null
           product?: Database["public"]["Enums"]["product_type"]
           razorpay_order_id?: string | null
@@ -802,6 +805,70 @@ export type Database = {
           },
         ]
       }
+      report_checklist: {
+        Row: {
+          checked: Json
+          report_id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          checked?: Json
+          report_id: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          checked?: Json
+          report_id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "report_checklist_report_id_fkey"
+            columns: ["report_id"]
+            isOneToOne: false
+            referencedRelation: "reports"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      report_feedback: {
+        Row: {
+          comment: string | null
+          created_at: string
+          id: string
+          rating: number
+          report_id: string
+          user_id: string
+        }
+        Insert: {
+          comment?: string | null
+          created_at?: string
+          id?: string
+          rating: number
+          report_id: string
+          user_id: string
+        }
+        Update: {
+          comment?: string | null
+          created_at?: string
+          id?: string
+          rating?: number
+          report_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "report_feedback_report_id_fkey"
+            columns: ["report_id"]
+            isOneToOne: false
+            referencedRelation: "reports"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       reports: {
         Row: {
           created_at: string
@@ -810,6 +877,7 @@ export type Database = {
           order_id: string
           pdf_path: string | null
           published_at: string | null
+          share_expires_at: string | null
           share_token: string | null
           updated_at: string
           user_id: string
@@ -822,6 +890,7 @@ export type Database = {
           order_id: string
           pdf_path?: string | null
           published_at?: string | null
+          share_expires_at?: string | null
           share_token?: string | null
           updated_at?: string
           user_id: string
@@ -834,6 +903,7 @@ export type Database = {
           order_id?: string
           pdf_path?: string | null
           published_at?: string | null
+          share_expires_at?: string | null
           share_token?: string | null
           updated_at?: string
           user_id?: string
