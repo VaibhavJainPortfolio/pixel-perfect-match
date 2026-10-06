@@ -5,7 +5,7 @@ export const Route = createFileRoute("/api/public/cron/payment-reminders")({
   server: {
     handlers: {
       POST: async ({ request }) => {
-        const secret = process.env["LOVABLE_CRON_SECRET"];
+        const secret = process.env["CRON_SECRET"] || process.env["LOVABLE_CRON_SECRET"];
         const { safeEqual } = await import("@/lib/payments.server");
         const got = request.headers.get("x-cron-secret") ?? "";
         if (!secret || !safeEqual(got, secret)) return new Response("Unauthorized", { status: 401 });

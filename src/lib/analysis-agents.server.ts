@@ -1,17 +1,15 @@
-// Face/hair, body and skin analysis agents: Claude via the Lovable AI Gateway Messages API,
+// Face/hair, body and skin analysis agents: Google Gemini via @ai-sdk/google,
 // base64 photos, JSON-only answers validated with Zod (one retry with the validation error).
-import { createAnthropic } from "@ai-sdk/anthropic";
+import { google } from "@ai-sdk/google";
 import { streamText } from "ai";
 import { z } from "zod";
 
-const GATEWAY = "https://ai.gateway.lovable.dev/v1";
-const DEFAULT_CLAUDE = "anthropic/claude-sonnet-5";
-const RUN_HEADER = "X-Lovable-AIG-Run-ID";
+const DEFAULT_GEMINI = "gemini-2.5-flash";
 
 export class AgentError extends Error { constructor(msg: string, public retryable = true) { super(msg); } }
 
 export function resolveClaudeModel(v: unknown) {
-  return typeof v === "string" && v.startsWith("anthropic/") ? v : DEFAULT_CLAUDE;
+  return typeof v === "string" && v.includes("gemini") ? v : DEFAULT_GEMINI;
 }
 
 const s = z.string();
@@ -67,27 +65,16 @@ async function toImagePart(url: string) {
 export async function runClaudeAgent<T extends z.ZodTypeAny>(opts: {
   model: string; system: string; schema: T; input: unknown; imageUrls: (string | null)[]; maxOutputTokens?: number;
 }): Promise<{ output: z.infer<T>; model: string; tokensIn: number; tokensOut: number }> {
-  const apiKey = process.env["LOVABLE_API_KEY"];
-  if (!apiKey) throw new AgentError("AI is not configured", false);
-  let runId: string | undefined;
-  const anthropic = createAnthropic({
-    baseURL: GATEWAY, apiKey,
-    headers: { "X-Lovable-AIG-SDK": "vercel-ai-sdk" },
-    fetch: async (input: RequestInfo | URL, init?: RequestInit) => {
-      const headers = new Headers(init?.headers);
-      if (runId && !headers.has(RUN_HEADER)) headers.set(RUN_HEADER, runId);
-      const res = await fetch(input, { ...init, headers });
-      runId ??= res.headers.get(RUN_HEADER)?.trim() || undefined;
-      return res;
-    },
-  });
+  const apiKey = process.env["GEMINI_API_KEY"];
+  if (!apiKey) throw new AgentError("AI is not configured (missing GEMINI_API_KEY)", false);
+  const targetModel = resolveClaudeModel(opts.model);
   const images = await Promise.all(opts.imageUrls.filter(Boolean).map((u) => toImagePart(u!)));
   const messages: any[] = [{ role: "user", content: [{ type: "text", text: "INPUT:\n" + JSON.stringify(opts.input) }, ...images] }];
   let tokensIn = 0, tokensOut = 0;
 
   for (let attempt = 0; attempt < 2; attempt++) {
     const result = streamText({
-      model: anthropic(opts.model), maxOutputTokens: opts.maxOutputTokens ?? 8000, maxRetries: 0,
+      model: google(targetModel), maxOutputTokens: opts.maxOutputTokens ?? 8000, maxRetries: 0,
       system: opts.system + "\nRespond with a single JSON object only — no markdown, no commentary.",
       messages,
     });

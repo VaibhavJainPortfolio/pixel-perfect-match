@@ -23,7 +23,7 @@ export class ProviderError extends Error {
   constructor(msg: string, public retryable: boolean) { super(msg); }
 }
 
-export const GATEWAY = "https://ai.gateway.lovable.dev/v1";
+export const GATEWAY = process.env.AI_GATEWAY_URL || "https://api.openai.com/v1";
 
 export function b64ToBytes(b64: string) { return Uint8Array.from(atob(b64), (c) => c.charCodeAt(0)); }
 export function bytesToB64(bytes: Uint8Array) {

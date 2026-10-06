@@ -2,7 +2,6 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
-import { lovable } from "@/integrations/lovable/index";
 import { getMyAccess } from "@/lib/account.functions";
 import { PageShell } from "@/components/gent/PageShell";
 import { GoldButton, GhostButton } from "@/components/gent/buttons";
@@ -75,8 +74,8 @@ function Login() {
   };
 
   const google = async () => {
-    const r = await lovable.auth.signInWithOAuth("google", { redirect_uri: window.location.origin + "/login" });
-    if (r.error) toast.error("Google sign-in failed");
+    const { error } = await supabase.auth.signInWithOAuth({ provider: "google", options: { redirectTo: window.location.origin + "/login" } });
+    if (error) toast.error("Google sign-in failed: " + error.message);
   };
 
   const magic = async (e: React.FormEvent) => {

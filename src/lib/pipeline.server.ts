@@ -1,7 +1,7 @@
 // Report pipeline: run creation, step dispatch, agent implementations, retries and failure handling.
 // Dispatch happens in the database (dispatch_ready_steps → pg_net → /api/public/pipeline/step), so every
 // step runs in its own HTTP request and a closed browser never stops a run.
-import { createOpenAI } from "@ai-sdk/openai";
+import { google } from "@ai-sdk/google";
 import { streamText } from "ai";
 import { resolveModel } from "./photo-check.server";
 import * as A from "./analysis-agents.server";
@@ -10,8 +10,6 @@ import { getImageProvider } from "./render/providers.server";
 import { ProviderError } from "./render/types";
 
 type Admin = any;
-const GATEWAY = "https://ai.gateway.lovable.dev/v1";
-const RUN_HEADER = "X-Lovable-AIG-Run-ID";
 
 export const STEP_KEYS = ["measurements", "face_hair", "body", "skin", "eyewear", "stylist", "renders", "review", "report_build", "pdf", "delivery"] as const;
 export type StepKey = (typeof STEP_KEYS)[number];
@@ -219,20 +217,9 @@ async function costFor(admin: Admin, model?: string, tin?: number, tout?: number
 // ---------- AI helpers ----------
 
 function provider() {
-  const apiKey = process.env["LOVABLE_API_KEY"];
-  if (!apiKey) throw new StepError("AI is not configured", false);
-  let runId: string | undefined;
-  return createOpenAI({
-    baseURL: GATEWAY, apiKey,
-    headers: { "Lovable-API-Key": apiKey, "X-Lovable-AIG-SDK": "vercel-ai-sdk" },
-    fetch: async (input: RequestInfo | URL, init?: RequestInit) => {
-      const headers = new Headers(init?.headers);
-      if (runId && !headers.has(RUN_HEADER)) headers.set(RUN_HEADER, runId);
-      const res = await fetch(input, { ...init, headers });
-      runId ??= res.headers.get(RUN_HEADER)?.trim() || undefined;
-      return res;
-    },
-  });
+  const apiKey = process.env["GEMINI_API_KEY"];
+  if (!apiKey) throw new StepError("AI is not configured (missing GEMINI_API_KEY)", false);
+  return google;
 }
 
 async function aiJson(ctx: Ctx, opts: { modelKey: string; promptKey: string; defaultPrompt: string; input: unknown; images?: (string | null)[] }) {
@@ -241,13 +228,12 @@ async function aiJson(ctx: Ctx, opts: { modelKey: string; promptKey: string; def
   const instructions = (typeof custom === "string" && custom.trim()) ? custom : opts.defaultPrompt;
   const images = (opts.images ?? []).filter(Boolean) as string[];
   const result = streamText({
-    model: provider().responses(model),
+    model: google(model),
     system: instructions + "\nReply with a single JSON object only, no markdown.",
     messages: [{ role: "user", content: [
       { type: "text", text: "INPUT:\n" + JSON.stringify(opts.input) },
       ...images.map((u) => ({ type: "image" as const, image: new URL(u) })),
     ] }],
-    providerOptions: { openai: { store: false, forceReasoning: true, reasoningEffort: "medium", reasoningSummary: "auto", include: ["reasoning.encrypted_content"] } },
   });
   const text = await result.text;
   const usage: any = await result.usage;

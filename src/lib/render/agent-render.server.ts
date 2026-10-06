@@ -61,7 +61,7 @@ export async function renderLook(opts: {
   costFor: (model?: string, tin?: number, tout?: number) => Promise<number>;
 }): Promise<{ status: "done" | "rejected"; costUsd: number; check: z.infer<typeof RenderCheckSchema> }> {
   const { admin, order, job, settings } = opts;
-  const apiKey = process.env["LOVABLE_API_KEY"];
+  const apiKey = process.env["GEMINI_API_KEY"];
   if (!apiKey) throw new ProviderError("AI is not configured", false);
   const provider = getImageProvider(settings["image_provider"]);
   const costs = (settings["model_costs"] ?? {}) as Record<string, any>;
