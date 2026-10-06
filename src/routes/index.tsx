@@ -16,7 +16,7 @@ import { cn } from "@/lib/utils";
 import beforeImg from "@/assets/before.jpg";
 import afterImg from "@/assets/after.jpg";
 
-const TITLE = "TheGent's Style Report — personal style analysis for Indian men";
+const TITLE = "TheGent — AI Personal Style Analysis for Indian Men";
 const DESC = "A personal stylist's analysis of your face, body and skin tone, built from 8 photos. Report in 30 minutes. ₹1,999 + GST.";
 
 export const Route = createFileRoute("/")({
@@ -74,34 +74,47 @@ function Index() {
 
   return (
     <PageShell>
-      {/* 1. Hero */}
-      <section ref={heroRef} className="space-y-6 pb-4">
-        <p className="eyebrow">Personal style analysis</p>
-        <h1 className="text-4xl leading-[1.08] text-foreground sm:text-6xl">
-          Why you still look average, <span className="text-gold">even after spending on better clothes</span>
-        </h1>
-        <p className="max-w-2xl text-lg leading-relaxed text-muted-foreground">
-          A personal stylist's analysis of your face, body and skin tone, built from 8 photos. Report in 30 minutes.
-        </p>
-        <div className="flex flex-col gap-3 sm:flex-row">
-          <GoldButton asChild size="lg"><Link to="/app/checkout" search={{ product: "style_report" }}>Get my style report – ₹1,999</Link></GoldButton>
-          <GhostButton asChild size="lg"><Link to="/free-check">Try a free face check</Link></GhostButton>
-        </div>
-      </section>
+      {/* 1. Hero & Interactive Before/After Showcase */}
+      <section ref={heroRef} className="pb-8 lg:py-6">
+        <div className="grid grid-cols-1 items-center gap-10 lg:grid-cols-12 lg:gap-12 xl:gap-16">
+          {/* Left Column: Copy & CTAs */}
+          <div className="space-y-6 lg:col-span-6 xl:col-span-6">
+            <p className="eyebrow">Personal style analysis</p>
+            <h1 className="text-4xl leading-[1.08] text-foreground sm:text-5xl lg:text-5xl xl:text-6xl font-display">
+              Why you still look average, <span className="text-gold">even after spending on better clothes</span>
+            </h1>
+            <p className="max-w-xl text-base sm:text-lg leading-relaxed text-muted-foreground">
+              A personal stylist's analysis of your face, body and skin tone, built from 8 photos. Report in 30 minutes.
+            </p>
+            <div className="flex flex-col gap-3 sm:flex-row pt-2">
+              <GoldButton asChild size="lg">
+                <Link to="/app/checkout" search={{ product: "style_report" }}>Get my style report – ₹1,999</Link>
+              </GoldButton>
+              <GhostButton asChild size="lg">
+                <Link to="/free-check">Try a free face check</Link>
+              </GhostButton>
+            </div>
+          </div>
 
-      {/* 2. Before / after */}
-      <section className="mt-12 grid items-center gap-8 md:grid-cols-2">
-        <BeforeAfterSlider
-          before={ba?.before_url || beforeImg}
-          after={ba?.after_url || afterImg}
-          beforeLabel={ba?.before_label || "Before"}
-          afterLabel={ba?.after_label || "AI render of the same man"}
-        />
-        <SectionHeading
-          eyebrow="See the difference"
-          title="Same man. Better choices."
-          description="Drag the divider. Your report includes AI images of you wearing your recommended outfits, so you can see them before you buy anything."
-        />
+          {/* Right Column: Integrated Interactive Before/After Visual */}
+          <div className="space-y-4 lg:col-span-6 xl:col-span-6">
+            <div className="overflow-hidden rounded-2xl border border-border bg-card/60 p-3 shadow-2xl backdrop-blur-sm">
+              <BeforeAfterSlider
+                before={ba?.before_url || beforeImg}
+                after={ba?.after_url || afterImg}
+                beforeLabel={ba?.before_label || "Before"}
+                afterLabel={ba?.after_label || "AI render of the same man"}
+              />
+            </div>
+            <div className="rounded-xl border border-border/60 bg-card/40 p-4 backdrop-blur-sm">
+              <p className="eyebrow">See the difference</p>
+              <h2 className="mt-0.5 text-xl text-foreground font-display">Same man. Better choices.</h2>
+              <p className="mt-1 text-sm text-muted-foreground leading-relaxed">
+                Drag the divider. Your report includes AI images of you wearing your recommended outfits, so you can see them before you buy anything.
+              </p>
+            </div>
+          </div>
+        </div>
       </section>
 
       {/* 3. What's in the report */}

@@ -23,7 +23,7 @@ export function Logo() {
 export function PageShell({
   children,
   className,
-  width = "max-w-5xl",
+  width = "max-w-[1340px]",
 }: {
   children: ReactNode;
   className?: string;
