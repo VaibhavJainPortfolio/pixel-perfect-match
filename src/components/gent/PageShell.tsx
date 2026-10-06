@@ -7,15 +7,16 @@ import { ThemeToggle } from "./ThemeToggle";
 import { GoldButton } from "./buttons";
 
 const nav = [
-  { to: "/free-check", label: "Free check" },
-  { to: "/sample-report", label: "Sample" },
-  { to: "/pricing", label: "Pricing" },
+  { href: "#how-it-works", label: "How It Works" },
+  { href: "#what-you-get", label: "What You Get" },
+  { href: "#ai-try-on", label: "AI Try-On" },
+  { href: "#pricing", label: "Pricing" },
 ] as const;
 
 export function Logo() {
   return (
-    <Link to="/" className="font-display text-xl text-foreground">
-      TheGent's<span className="text-gold">.</span>
+    <Link to="/" className="font-display text-xl text-foreground tracking-tight hover:opacity-95 transition-opacity">
+      TheGent<span className="text-gold">.</span>
     </Link>
   );
 }
@@ -23,7 +24,7 @@ export function Logo() {
 export function PageShell({
   children,
   className,
-  width = "max-w-[1340px]",
+  width = "max-w-[1360px]",
 }: {
   children: ReactNode;
   className?: string;
@@ -31,29 +32,36 @@ export function PageShell({
 }) {
   const { user } = useSession();
   return (
-    <div className="flex min-h-screen flex-col">
-      <header className="sticky top-0 z-30 border-b border-border bg-background/95 backdrop-blur">
-        <div className={cn("mx-auto flex h-16 items-center justify-between gap-3 px-5", width)}>
+    <div className="flex min-h-screen flex-col bg-background text-foreground">
+      <header className="sticky top-0 z-30 border-b border-border/80 bg-background/90 backdrop-blur-md transition-all">
+        <div className={cn("mx-auto flex h-16 items-center justify-between gap-4 px-6", width)}>
           <Logo />
-          <nav className="hidden items-center gap-6 text-sm text-muted-foreground md:flex">
+          <nav className="hidden items-center gap-8 text-sm font-medium text-muted-foreground md:flex">
             {nav.map((n) => (
-              <Link key={n.to} to={n.to} className="hover:text-foreground" activeProps={{ className: "text-gold" }}>
+              <a key={n.href} href={n.href} className="transition-colors hover:text-foreground">
                 {n.label}
-              </Link>
+              </a>
             ))}
           </nav>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-3">
             <ThemeToggle />
             {user ? (
-              <GoldButton asChild size="sm"><Link to="/app">My account</Link></GoldButton>
+              <GoldButton asChild size="sm"><Link to="/app">My Account</Link></GoldButton>
             ) : (
-              <GoldButton asChild size="sm"><Link to="/login">Sign in</Link></GoldButton>
+              <>
+                <Link to="/login" className="hidden text-sm font-medium text-muted-foreground hover:text-foreground sm:inline-block">
+                  Sign In
+                </Link>
+                <GoldButton asChild size="sm">
+                  <Link to="/app/checkout" search={{ product: "style_report" }}>Get My Report</Link>
+                </GoldButton>
+              </>
             )}
           </div>
         </div>
-        <nav className="flex gap-5 overflow-x-auto border-t border-border px-5 py-2.5 text-sm text-muted-foreground md:hidden">
+        <nav className="flex gap-6 overflow-x-auto border-t border-border/60 px-6 py-2.5 text-sm text-muted-foreground md:hidden">
           {nav.map((n) => (
-            <Link key={n.to} to={n.to} activeProps={{ className: "text-gold" }}>{n.label}</Link>
+            <a key={n.href} href={n.href} className="shrink-0 hover:text-foreground">{n.label}</a>
           ))}
         </nav>
       </header>
