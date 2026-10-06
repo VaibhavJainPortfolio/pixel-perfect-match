@@ -3,7 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useEffect, useRef, useState } from "react";
 import {
   ScanFace, PersonStanding, Palette, Scissors, Sparkles, Shirt, Watch, Droplets, CalendarDays,
-  ShieldCheck, Lock, Sparkle, ArrowRight, Check, X, Star, Layers, Eye, Sparkles as SparklesIcon
+  ShieldCheck, Lock, Sparkle, ArrowRight, Check, X, Star, Layers, Eye, Camera, Clock, User, MapPin, Sparkles as SparklesIcon
 } from "lucide-react";
 import { PageShell } from "@/components/gent/PageShell";
 import { GoldButton, GhostButton } from "@/components/gent/buttons";
@@ -83,11 +83,11 @@ function Index() {
   const reviews = useQuery(reviewsQuery);
 
   return (
-    <PageShell>
+    <PageShell width="max-w-[1640px]">
       {/* -------------------------------------------------- */}
-      {/* SECTION 1 — EDITORIAL HERO (WIDE CANVAS)           */}
+      {/* SECTION 1 — EDITORIAL HERO (REFERENCE REPRODUCTION) */}
       {/* -------------------------------------------------- */}
-      <section ref={heroRef} className="relative pt-2 pb-10 lg:pt-4 lg:pb-16 -mx-4 sm:-mx-6 lg:-mx-8 px-4 sm:px-8 lg:px-12 w-full max-w-[1560px] mx-auto">
+      <section ref={heroRef} className="relative pt-2 pb-8 lg:pt-4 lg:pb-14 w-full">
         {/* Subtle Ambient Gold Backlight Glow */}
         <div className="pointer-events-none absolute -left-20 top-1/4 size-96 rounded-full bg-gold/5 blur-3xl" />
         <div className="pointer-events-none absolute -right-20 top-1/3 size-96 rounded-full bg-gold/10 blur-3xl" />
@@ -95,45 +95,78 @@ function Index() {
         <div className="grid grid-cols-1 items-center gap-10 lg:grid-cols-12 lg:gap-12">
           {/* LEFT COLUMN: 44% Width on Desktop */}
           <div className="space-y-6 lg:col-span-5 xl:col-span-5">
-            <div className="inline-flex items-center gap-2 rounded-full border border-gold/25 bg-gold-soft px-3.5 py-1 text-xs tracking-widest text-gold uppercase font-medium">
-              <SparklesIcon className="size-3.5" />
-              <span>Personal Style, Built Around You</span>
+            {/* Eyebrow with gold accent rule */}
+            <div className="flex items-center gap-3">
+              <span className="text-xs tracking-widest text-gold uppercase font-medium">
+                Personal Style, Built Around You
+              </span>
+              <div className="h-px w-12 bg-gold/50 shrink-0" />
             </div>
 
-            <h1 className="font-display text-4xl leading-[1.06] text-foreground sm:text-5xl lg:text-5xl xl:text-6xl tracking-tight">
+            {/* Display Serif Headline matching reference scale */}
+            <h1 className="font-display text-5xl leading-[0.98] text-[#EEE8DC] sm:text-6xl lg:text-7xl xl:text-[76px] tracking-tight">
               Look better. <br />
-              <span className="text-gold italic">Without guessing.</span>
+              <span className="text-[#D1AE6E] font-serif italic">Without guessing.</span>
             </h1>
 
-            <p className="max-w-xl text-base text-muted-foreground leading-relaxed">
+            <p className="max-w-xl text-base text-muted-foreground leading-relaxed sm:text-lg">
               Upload 8 photos. TheGent analyzes your face, build and skin tone, then shows you the hair, beard, colors, fits and outfits that actually suit you — including 16 AI outfit previews.
             </p>
 
-            <div className="flex flex-col gap-3.5 sm:flex-row pt-1">
-              <GoldButton asChild size="lg" className="px-8 shadow-xl shadow-gold/10">
-                <Link to="/app/checkout" search={{ product: "style_report" }}>Get My Style Report — ₹1,999</Link>
+            <div className="flex flex-col gap-4 sm:flex-row pt-1 items-stretch sm:items-center">
+              <GoldButton asChild size="lg" className="px-8 shadow-xl shadow-gold/10 text-base font-medium rounded-full">
+                <Link to="/app/checkout" search={{ product: "style_report" }} className="flex items-center gap-2.5">
+                  <span>Get My Style Report — ₹1,999</span>
+                  <ArrowRight className="size-4" />
+                </Link>
               </GoldButton>
-              <GhostButton asChild size="lg">
+              <GhostButton asChild size="lg" className="rounded-full border border-border/80 px-7 text-base font-medium">
                 <Link to="/free-check">Try Free Face Analysis</Link>
               </GhostButton>
             </div>
 
-            {/* Microcopy Trust Line */}
-            <p className="text-xs text-muted-foreground/90 pt-1 border-t border-border/40">
-              8 guided photos &nbsp;•&nbsp; ~30 min report &nbsp;•&nbsp; Private & secure
-            </p>
+            {/* Microcopy Trust Row */}
+            <div className="flex items-center gap-6 text-xs text-muted-foreground/90 pt-3">
+              <span className="flex items-center gap-2">
+                <Camera className="size-4 text-gold shrink-0" />
+                <span>8 guided photos</span>
+              </span>
+              <span className="flex items-center gap-2">
+                <Clock className="size-4 text-gold shrink-0" />
+                <span>~30 min report</span>
+              </span>
+              <span className="flex items-center gap-2">
+                <Lock className="size-4 text-gold shrink-0" />
+                <span>Private & secure</span>
+              </span>
+            </div>
 
-            {/* 3 Compact Proof Points */}
-            <div className="flex flex-col sm:flex-row sm:items-center gap-3 pt-1 text-xs text-foreground/90 font-medium">
-              <span className="flex items-center gap-1.5"><Check className="size-3.5 text-gold shrink-0" /> Face, body & color analysis</span>
-              <span className="flex items-center gap-1.5"><Check className="size-3.5 text-gold shrink-0" /> 16 personalized outfit previews</span>
-              <span className="flex items-center gap-1.5"><Check className="size-3.5 text-gold shrink-0" /> Built for Indian men</span>
+            {/* 3 Circular Icon Proof Items */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-6 border-t border-border/40">
+              <div className="flex items-center gap-3">
+                <div className="flex size-10 items-center justify-center rounded-full border border-gold/30 bg-gold/5 text-gold shrink-0">
+                  <User className="size-4" />
+                </div>
+                <span className="text-xs font-medium text-foreground leading-tight">Face, body & color analysis</span>
+              </div>
+              <div className="flex items-center gap-3">
+                <div className="flex size-10 items-center justify-center rounded-full border border-gold/30 bg-gold/5 text-gold shrink-0">
+                  <Shirt className="size-4" />
+                </div>
+                <span className="text-xs font-medium text-foreground leading-tight">16 personalized outfit previews</span>
+              </div>
+              <div className="flex items-center gap-3">
+                <div className="flex size-10 items-center justify-center rounded-full border border-gold/30 bg-gold/5 text-gold shrink-0">
+                  <MapPin className="size-4" />
+                </div>
+                <span className="text-xs font-medium text-foreground leading-tight">Built for Indian men</span>
+              </div>
             </div>
           </div>
 
-          {/* RIGHT COLUMN: 56% Width Dominant Editorial Visual Showcase */}
+          {/* RIGHT COLUMN: 56% Width Dominant Visual Showcase */}
           <div className="lg:col-span-7 xl:col-span-7">
-            <HeroStyleShowcase mainImage={ba?.after_url || afterImg} />
+            <HeroStyleShowcase />
           </div>
         </div>
       </section>
