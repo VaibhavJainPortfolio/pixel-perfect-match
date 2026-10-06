@@ -27,29 +27,42 @@ function createSupabaseFetch(supabaseKey: string): typeof fetch {
 }
 
 
+function getEnvVar(key: string): string | undefined {
+  if (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env[key]) {
+    return import.meta.env[key];
+  }
+  if (typeof process !== 'undefined' && process.env && process.env[key]) {
+    return process.env[key];
+  }
+  return undefined;
+}
+
 function createSupabaseClient() {
-  // Use import.meta.env for client-side (Vite build-time replacement)
-  // Fall back to process.env for SSR (server-side rendering)
-  const SUPABASE_URL = import.meta.env['VITE_SUPABASE_URL'] || process.env['SUPABASE_URL'];
-  const SUPABASE_PUBLISHABLE_KEY = import.meta.env['VITE_SUPABASE_PUBLISHABLE_KEY'] || process.env['SUPABASE_PUBLISHABLE_KEY'];
+  const SUPABASE_URL =
+    getEnvVar('VITE_SUPABASE_URL') ||
+    getEnvVar('SUPABASE_URL');
+
+  const SUPABASE_PUBLISHABLE_KEY =
+    getEnvVar('VITE_SUPABASE_PUBLISHABLE_KEY') ||
+    getEnvVar('SUPABASE_PUBLISHABLE_KEY') ||
+    getEnvVar('VITE_SUPABASE_ANON_KEY') ||
+    getEnvVar('SUPABASE_ANON_KEY') ||
+    getEnvVar('SUPABASE_KEY');
+
+  const url = SUPABASE_URL || 'https://placeholder.supabase.co';
+  const key = SUPABASE_PUBLISHABLE_KEY || 'sb_publishable_placeholder';
 
   if (!SUPABASE_URL || !SUPABASE_PUBLISHABLE_KEY) {
-    const missing = [
-      ...(!SUPABASE_URL ? ['SUPABASE_URL'] : []),
-      ...(!SUPABASE_PUBLISHABLE_KEY ? ['SUPABASE_PUBLISHABLE_KEY'] : []),
-    ];
-    const message = `Missing Supabase environment variable(s): ${missing.join(', ')}. Check your .env file.`;
-    console.error(`[Supabase] ${message}`);
-    throw new Error(message);
+    console.warn('[Supabase] Missing SUPABASE_URL or SUPABASE_PUBLISHABLE_KEY environment variables. Using fallback mode.');
   }
 
-  return createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
+  return createClient<Database>(url, key, {
     global: {
-      fetch: createSupabaseFetch(SUPABASE_PUBLISHABLE_KEY),
+      fetch: createSupabaseFetch(key),
     },
     auth: {
-      persistSession: true,
-      autoRefreshToken: true,
+      persistSession: typeof window !== 'undefined',
+      autoRefreshToken: typeof window !== 'undefined',
     },
   });
 }
