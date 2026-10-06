@@ -9,6 +9,7 @@ import { PageShell } from "@/components/gent/PageShell";
 import { GoldButton, GhostButton } from "@/components/gent/buttons";
 import { Card, SectionHeading, EmptyState } from "@/components/gent/primitives";
 import { BeforeAfterSlider } from "@/components/gent/BeforeAfterSlider";
+import { HeroStyleShowcase } from "@/components/gent/HeroStyleShowcase";
 import { SamplePageThumb, samplePages } from "@/components/gent/SamplePages";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { beforeAfterQuery, formatINR, pricingQuery, reviewsQuery } from "@/lib/public-content";
@@ -84,31 +85,31 @@ function Index() {
   return (
     <PageShell>
       {/* -------------------------------------------------- */}
-      {/* SECTION 1 — CINEMATIC HERO                          */}
+      {/* SECTION 1 — EDITORIAL HERO (WIDE CANVAS)           */}
       {/* -------------------------------------------------- */}
-      <section ref={heroRef} className="relative py-6 lg:py-12">
+      <section ref={heroRef} className="relative pt-2 pb-10 lg:pt-4 lg:pb-16 -mx-4 sm:-mx-6 lg:-mx-8 px-4 sm:px-8 lg:px-12 w-full max-w-[1560px] mx-auto">
         {/* Subtle Ambient Gold Backlight Glow */}
         <div className="pointer-events-none absolute -left-20 top-1/4 size-96 rounded-full bg-gold/5 blur-3xl" />
         <div className="pointer-events-none absolute -right-20 top-1/3 size-96 rounded-full bg-gold/10 blur-3xl" />
 
-        <div className="grid grid-cols-1 items-center gap-12 lg:grid-cols-12 lg:gap-14">
-          {/* LEFT COLUMN: Editorial Headline & Actions */}
-          <div className="space-y-6 lg:col-span-6 xl:col-span-6">
+        <div className="grid grid-cols-1 items-center gap-10 lg:grid-cols-12 lg:gap-12">
+          {/* LEFT COLUMN: 44% Width on Desktop */}
+          <div className="space-y-6 lg:col-span-5 xl:col-span-5">
             <div className="inline-flex items-center gap-2 rounded-full border border-gold/25 bg-gold-soft px-3.5 py-1 text-xs tracking-widest text-gold uppercase font-medium">
               <SparklesIcon className="size-3.5" />
-              <span>AI Personal Style Analysis For Indian Men</span>
+              <span>Personal Style, Built Around You</span>
             </div>
 
-            <h1 className="font-display text-4xl leading-[1.08] text-foreground sm:text-5xl lg:text-5xl xl:text-6xl">
-              You don’t need more clothes. <br className="hidden sm:inline" />
-              You need <span className="text-gold italic">the right ones for you</span>.
+            <h1 className="font-display text-4xl leading-[1.06] text-foreground sm:text-5xl lg:text-5xl xl:text-6xl tracking-tight">
+              Look better. <br />
+              <span className="text-gold italic">Without guessing.</span>
             </h1>
 
             <p className="max-w-xl text-base text-muted-foreground leading-relaxed">
-              Upload 8 photos and get a personalized style report covering haircut, beard, colors, fit and outfits — plus AI previews so you can see how better choices look on you before you buy anything.
+              Upload 8 photos. TheGent analyzes your face, build and skin tone, then shows you the hair, beard, colors, fits and outfits that actually suit you — including 16 AI outfit previews.
             </p>
 
-            <div className="flex flex-col gap-3.5 sm:flex-row pt-2">
+            <div className="flex flex-col gap-3.5 sm:flex-row pt-1">
               <GoldButton asChild size="lg" className="px-8 shadow-xl shadow-gold/10">
                 <Link to="/app/checkout" search={{ product: "style_report" }}>Get My Style Report — ₹1,999</Link>
               </GoldButton>
@@ -117,68 +118,54 @@ function Index() {
               </GhostButton>
             </div>
 
-            {/* Microcopy Trust Bar */}
-            <div className="flex items-center gap-4 text-xs text-muted-foreground/90 pt-2 border-t border-border/40">
-              <span className="flex items-center gap-1.5"><Check className="size-3.5 text-gold" /> 8 guided photos</span>
-              <span className="flex items-center gap-1.5"><Check className="size-3.5 text-gold" /> ~30 min report</span>
-              <span className="flex items-center gap-1.5"><Lock className="size-3.5 text-gold" /> Private & secure</span>
-            </div>
+            {/* Microcopy Trust Line */}
+            <p className="text-xs text-muted-foreground/90 pt-1 border-t border-border/40">
+              8 guided photos &nbsp;•&nbsp; ~30 min report &nbsp;•&nbsp; Private & secure
+            </p>
 
-            {/* 3 Compact Proof / Value Bullets */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2">
-              <div className="flex items-center gap-2 rounded-lg border border-gold/15 bg-card/40 px-3 py-2 text-xs font-medium text-foreground">
-                <Check className="size-3.5 text-gold shrink-0" />
-                <span>Face, body & color analysis</span>
-              </div>
-              <div className="flex items-center gap-2 rounded-lg border border-gold/15 bg-card/40 px-3 py-2 text-xs font-medium text-foreground">
-                <Check className="size-3.5 text-gold shrink-0" />
-                <span>16 AI outfit previews</span>
-              </div>
-              <div className="flex items-center gap-2 rounded-lg border border-gold/15 bg-card/40 px-3 py-2 text-xs font-medium text-foreground">
-                <Check className="size-3.5 text-gold shrink-0" />
-                <span>Built for Indian men</span>
-              </div>
+            {/* 3 Compact Proof Points */}
+            <div className="flex flex-col sm:flex-row sm:items-center gap-3 pt-1 text-xs text-foreground/90 font-medium">
+              <span className="flex items-center gap-1.5"><Check className="size-3.5 text-gold shrink-0" /> Face, body & color analysis</span>
+              <span className="flex items-center gap-1.5"><Check className="size-3.5 text-gold shrink-0" /> 16 personalized outfit previews</span>
+              <span className="flex items-center gap-1.5"><Check className="size-3.5 text-gold shrink-0" /> Built for Indian men</span>
             </div>
           </div>
 
-          {/* RIGHT COLUMN: Cinematic Before/After Visual */}
-          <div className="relative lg:col-span-6 xl:col-span-6">
-            {/* Callout 1: Top Left */}
-            <div className="absolute -top-4 -left-2 z-20 flex items-center gap-2 rounded-full border border-gold/40 bg-card/95 px-4 py-1.5 text-xs font-medium text-foreground shadow-xl backdrop-blur">
-              <Sparkle className="size-3.5 text-gold fill-gold" />
-              <span>16 AI Outfit Previews</span>
-            </div>
-
-            {/* Callout 2: Bottom Right */}
-            <div className="absolute -bottom-3 -right-2 z-20 flex items-center gap-2 rounded-full border border-gold/40 bg-card/95 px-4 py-1.5 text-xs font-medium text-foreground shadow-xl backdrop-blur">
-              <ShieldCheck className="size-3.5 text-gold" />
-              <span>Personalized for your face & body</span>
-            </div>
-
-            <div className="overflow-hidden rounded-2xl border border-gold/30 bg-card/70 p-3 shadow-2xl backdrop-blur-md">
-              <BeforeAfterSlider
-                before={ba?.before_url || beforeImg}
-                after={ba?.after_url || afterImg}
-                beforeLabel={ba?.before_label || "Before"}
-                afterLabel={ba?.after_label || "AI render of the same man"}
-              />
-            </div>
-
-            {/* Elegant Caption below visual (not a card) */}
-            <div className="mt-4 px-1 text-center sm:text-left">
-              <h3 className="font-display text-lg text-foreground tracking-tight">Same man. Better choices.</h3>
-              <p className="text-xs text-muted-foreground mt-0.5">
-                Drag to compare the original look with a personalized styled version.
-              </p>
-            </div>
+          {/* RIGHT COLUMN: 56% Width Dominant Editorial Visual Showcase */}
+          <div className="lg:col-span-7 xl:col-span-7">
+            <HeroStyleShowcase mainImage={ba?.after_url || afterImg} />
           </div>
         </div>
       </section>
 
       {/* -------------------------------------------------- */}
-      {/* SECTION 2 — PROBLEM / EMOTIONAL HOOK              */}
+      {/* SECTION 2 — SEE THE DIFFERENCE (BEFORE/AFTER)      */}
       {/* -------------------------------------------------- */}
-      <section className="mt-28 relative py-12 rounded-3xl border border-border/60 bg-card/30 px-6 sm:px-12 backdrop-blur-sm">
+      <section className="mt-16 lg:mt-24 relative py-12 rounded-3xl border border-border/60 bg-card/30 px-6 sm:px-12 backdrop-blur-sm">
+        <div className="max-w-3xl mx-auto text-center space-y-3 mb-10">
+          <p className="eyebrow">See The Difference</p>
+          <h2 className="font-display text-3xl sm:text-5xl text-foreground leading-tight">
+            Same man. <span className="text-gold italic">Better choices.</span>
+          </h2>
+          <p className="text-base sm:text-lg text-muted-foreground leading-relaxed">
+            Drag to compare the original look with a personalized styled version.
+          </p>
+        </div>
+
+        <div className="max-w-4xl mx-auto overflow-hidden rounded-2xl border border-gold/30 bg-card/70 p-3 shadow-2xl backdrop-blur-md">
+          <BeforeAfterSlider
+            before={ba?.before_url || beforeImg}
+            after={ba?.after_url || afterImg}
+            beforeLabel={ba?.before_label || "Before"}
+            afterLabel={ba?.after_label || "AI render of the same man"}
+          />
+        </div>
+      </section>
+
+      {/* -------------------------------------------------- */}
+      {/* SECTION 3 — PROBLEM / EMOTIONAL HOOK              */}
+      {/* -------------------------------------------------- */}
+      <section className="mt-20 relative py-12 rounded-3xl border border-border/60 bg-card/30 px-6 sm:px-12 backdrop-blur-sm">
         <div className="max-w-3xl mx-auto text-center space-y-4">
           <p className="eyebrow">The Core Problem</p>
           <h2 className="font-display text-3xl sm:text-5xl text-foreground leading-tight">
