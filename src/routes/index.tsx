@@ -94,21 +94,18 @@ function Index() {
         <div className="grid grid-cols-1 items-center gap-12 lg:grid-cols-12 lg:gap-14">
           {/* LEFT COLUMN: Editorial Headline & Actions */}
           <div className="space-y-6 lg:col-span-6 xl:col-span-6">
-            <div className="inline-flex items-center gap-2 rounded-full border border-gold/25 bg-gold-soft px-3.5 py-1 text-xs tracking-widest text-gold uppercase">
+            <div className="inline-flex items-center gap-2 rounded-full border border-gold/25 bg-gold-soft px-3.5 py-1 text-xs tracking-widest text-gold uppercase font-medium">
               <SparklesIcon className="size-3.5" />
-              <span>AI Personal Style Analysis For Men</span>
+              <span>AI Personal Style Analysis For Indian Men</span>
             </div>
 
             <h1 className="font-display text-4xl leading-[1.08] text-foreground sm:text-5xl lg:text-5xl xl:text-6xl">
-              Stop guessing what <span className="text-gold italic">looks good</span> on you.
+              You don’t need more clothes. <br className="hidden sm:inline" />
+              You need <span className="text-gold italic">the right ones for you</span>.
             </h1>
 
-            <p className="text-xl font-display text-foreground/90">
-              Know exactly what suits your face, body & skin tone.
-            </p>
-
             <p className="max-w-xl text-base text-muted-foreground leading-relaxed">
-              Upload 8 photos and get a personal style analysis built around your features — with haircut, beard, color palette, fit rules and 16 outfit recommendations.
+              Upload 8 photos and get a personalized style report covering haircut, beard, colors, fit and outfits — plus AI previews so you can see how better choices look on you before you buy anything.
             </p>
 
             <div className="flex flex-col gap-3.5 sm:flex-row pt-2">
@@ -122,18 +119,40 @@ function Index() {
 
             {/* Microcopy Trust Bar */}
             <div className="flex items-center gap-4 text-xs text-muted-foreground/90 pt-2 border-t border-border/40">
-              <span className="flex items-center gap-1.5"><Check className="size-3.5 text-gold" /> 8 photos required</span>
+              <span className="flex items-center gap-1.5"><Check className="size-3.5 text-gold" /> 8 guided photos</span>
               <span className="flex items-center gap-1.5"><Check className="size-3.5 text-gold" /> ~30 min report</span>
               <span className="flex items-center gap-1.5"><Lock className="size-3.5 text-gold" /> Private & secure</span>
+            </div>
+
+            {/* 3 Compact Proof / Value Bullets */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2">
+              <div className="flex items-center gap-2 rounded-lg border border-gold/15 bg-card/40 px-3 py-2 text-xs font-medium text-foreground">
+                <Check className="size-3.5 text-gold shrink-0" />
+                <span>Face, body & color analysis</span>
+              </div>
+              <div className="flex items-center gap-2 rounded-lg border border-gold/15 bg-card/40 px-3 py-2 text-xs font-medium text-foreground">
+                <Check className="size-3.5 text-gold shrink-0" />
+                <span>16 AI outfit previews</span>
+              </div>
+              <div className="flex items-center gap-2 rounded-lg border border-gold/15 bg-card/40 px-3 py-2 text-xs font-medium text-foreground">
+                <Check className="size-3.5 text-gold shrink-0" />
+                <span>Built for Indian men</span>
+              </div>
             </div>
           </div>
 
           {/* RIGHT COLUMN: Cinematic Before/After Visual */}
           <div className="relative lg:col-span-6 xl:col-span-6">
-            {/* Floating Badge */}
-            <div className="absolute -top-4 -right-2 z-20 flex items-center gap-2 rounded-full border border-gold/40 bg-card/95 px-4 py-1.5 text-xs font-medium text-foreground shadow-xl backdrop-blur">
+            {/* Callout 1: Top Left */}
+            <div className="absolute -top-4 -left-2 z-20 flex items-center gap-2 rounded-full border border-gold/40 bg-card/95 px-4 py-1.5 text-xs font-medium text-foreground shadow-xl backdrop-blur">
               <Sparkle className="size-3.5 text-gold fill-gold" />
-              <span>16 AI Outfit Previews Included</span>
+              <span>16 AI Outfit Previews</span>
+            </div>
+
+            {/* Callout 2: Bottom Right */}
+            <div className="absolute -bottom-3 -right-2 z-20 flex items-center gap-2 rounded-full border border-gold/40 bg-card/95 px-4 py-1.5 text-xs font-medium text-foreground shadow-xl backdrop-blur">
+              <ShieldCheck className="size-3.5 text-gold" />
+              <span>Personalized for your face & body</span>
             </div>
 
             <div className="overflow-hidden rounded-2xl border border-gold/30 bg-card/70 p-3 shadow-2xl backdrop-blur-md">
@@ -145,12 +164,12 @@ function Index() {
               />
             </div>
 
-            <div className="mt-4 rounded-xl border border-border/70 bg-card/50 p-4 backdrop-blur-md flex items-center justify-between gap-4">
-              <div>
-                <p className="eyebrow">Interactive Transformation</p>
-                <h3 className="font-display text-lg text-foreground mt-0.5">Same man. Better choices.</h3>
-                <p className="text-xs text-muted-foreground mt-0.5">Drag the divider to compare real photos with AI recommendations.</p>
-              </div>
+            {/* Elegant Caption below visual (not a card) */}
+            <div className="mt-4 px-1 text-center sm:text-left">
+              <h3 className="font-display text-lg text-foreground tracking-tight">Same man. Better choices.</h3>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                Drag to compare the original look with a personalized styled version.
+              </p>
             </div>
           </div>
         </div>
@@ -163,7 +182,7 @@ function Index() {
         <div className="max-w-3xl mx-auto text-center space-y-4">
           <p className="eyebrow">The Core Problem</p>
           <h2 className="font-display text-3xl sm:text-5xl text-foreground leading-tight">
-            You don’t need more clothes.<br /><span className="text-gold italic">You need better choices.</span>
+            Stop buying clothes by guesswork.<br /><span className="text-gold italic">Wear what actually suits you.</span>
           </h2>
           <p className="text-base sm:text-lg text-muted-foreground leading-relaxed pt-2">
             Most men buy shirts, shoes and hairstyles based on trends, brands or guesswork. The problem isn’t your wardrobe — it’s not knowing what actually works for your face geometry, proportions and skin tone.
